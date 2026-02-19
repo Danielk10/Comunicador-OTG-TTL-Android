@@ -17,16 +17,59 @@
         android:textSize="24sp"
         android:textStyle="bold"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_top_toStartOf="parent" />
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <androidx.cardview.widget.CardView
+        android:id="@+id/cardInstructions"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        app:cardBackgroundColor="#EBF8FF"
+        app:cardCornerRadius="12dp"
+        app:cardElevation="2dp"
+        app:layout_constraintTop_toBottomOf="@id/tvTitle">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="12dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="¡Actualización Completada!"
+                android:textColor="#2B6CB0"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="• Firmware Avanzado: El PIC 16F628A escucha comandos para controlar 4 pines (RB0, RB3, RB4, RB5). Puede encender todo a la vez o ejecutar secuencias.\n• Botones Rápido: Sección de 'Acciones Rápidas' para ENCENDER TODO o ejecutar SECUENCIAS sin escribir.\n• Lógica Robusta: Se añadió un retraso (Delay) en el PIC para visibilidad y se mejoró el manejo UART."
+                android:textColor="#2C5282"
+                android:textSize="12sp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="Conexión: TX Movil -> RB1 (RX), RX Movil -> RB2 (TX). GND común."
+                android:textColor="#4A5568"
+                android:textSize="11sp"
+                android:textStyle="italic" />
+        </LinearLayout>
+    </androidx.cardview.widget.CardView>
 
     <androidx.cardview.widget.CardView
         android:id="@+id/cardSettings"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
+        android:layout_marginTop="12dp"
         app:cardCornerRadius="12dp"
         app:cardElevation="4dp"
-        app:layout_constraintTop_toBottomOf="@id/tvTitle">
+        app:layout_constraintTop_toBottomOf="@id/cardInstructions">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -89,7 +132,7 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:backgroundTint="#F56565"
-                    android:isEnabled="false"
+                    android:enabled="false"
                     android:text="Disconnect"
                     android:textAllCaps="false"
                     android:textColor="#FFFFFF" />
@@ -135,13 +178,82 @@
     </androidx.cardview.widget.CardView>
 
     <androidx.cardview.widget.CardView
+        android:id="@+id/cardTasks"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        app:cardCornerRadius="12dp"
+        app:cardElevation="4dp"
+        app:layout_constraintTop_toBottomOf="@id/cardInput">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Acciones Rápidas"
+                android:textColor="#4A5568"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+
+            <GridLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:columnCount="2"
+                android:useDefaultMargins="true">
+
+                <Button
+                    android:id="@+id/btnAllOn"
+                    android:layout_width="0dp"
+                    android:layout_columnWeight="1"
+                    android:backgroundTint="#4299E1"
+                    android:text="ENCENDER TODO"
+                    android:textSize="12sp"
+                    android:textAllCaps="false" />
+
+                <Button
+                    android:id="@+id/btnAllOff"
+                    android:layout_width="0dp"
+                    android:layout_columnWeight="1"
+                    android:backgroundTint="#718096"
+                    android:text="APAGAR TODO"
+                    android:textSize="12sp"
+                    android:textAllCaps="false" />
+
+                <Button
+                    android:id="@+id/btnTask1"
+                    android:layout_width="0dp"
+                    android:layout_columnWeight="1"
+                    android:backgroundTint="#805AD5"
+                    android:text="TAREA 1: SECUENCIA"
+                    android:textSize="12sp"
+                    android:textAllCaps="false" />
+
+                <Button
+                    android:id="@+id/btnTask2"
+                    android:layout_width="0dp"
+                    android:layout_columnWeight="1"
+                    android:backgroundTint="#D53F8C"
+                    android:text="TAREA 2: FLASH"
+                    android:textSize="12sp"
+                    android:textAllCaps="false" />
+            </GridLayout>
+        </LinearLayout>
+    </androidx.cardview.widget.CardView>
+
+    <androidx.cardview.widget.CardView
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_marginTop="16dp"
         app:cardCornerRadius="12dp"
         app:cardElevation="2dp"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/cardInput">
+        app:layout_constraintTop_toBottomOf="@id/cardTasks">
 
         <LinearLayout
             android:layout_width="match_parent"

@@ -29,6 +29,8 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
 
     private Spinner spinnerBaudRate;
 
+    private Button btnAllOn, btnAllOff, btnTask1, btnTask2;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -83,6 +85,30 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
             }
         });
 
+        btnAllOn = findViewById(R.id.btnAllOn);
+        btnAllOff = findViewById(R.id.btnAllOff);
+        btnTask1 = findViewById(R.id.btnTask1);
+        btnTask2 = findViewById(R.id.btnTask2);
+
+        View.OnClickListener taskListener = new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (v.getId() == R.id.btnAllOn)
+                    serialManager.sendText("A");
+                else if (v.getId() == R.id.btnAllOff)
+                    serialManager.sendText("O");
+                else if (v.getId() == R.id.btnTask1)
+                    serialManager.sendText("T");
+                else if (v.getId() == R.id.btnTask2)
+                    serialManager.sendText("F");
+            }
+        };
+
+        btnAllOn.setOnClickListener(taskListener);
+        btnAllOff.setOnClickListener(taskListener);
+        btnTask1.setOnClickListener(taskListener);
+        btnTask2.setOnClickListener(taskListener);
+
         appendToReceive("USB TTL Picard Communicator ready.\n");
     }
 
@@ -113,6 +139,11 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
                 btnDisconnect.setEnabled(connected);
                 btnSend.setEnabled(connected);
                 spinnerBaudRate.setEnabled(!connected);
+
+                btnAllOn.setEnabled(connected);
+                btnAllOff.setEnabled(connected);
+                btnTask1.setEnabled(connected);
+                btnTask2.setEnabled(connected);
             }
         });
     }
