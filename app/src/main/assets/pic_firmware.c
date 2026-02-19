@@ -79,6 +79,9 @@ void main(void) {
                     }
                     UART_Write_Text("Tarea 2 completada\r\n");
                     break;
+                case '\r': // Ignorar retorno de carro
+                case '\n': // Ignorar salto de línea
+                    break;
                 default:
                     UART_Write_Text("CMD Desconocido\r\n");
                     break;
