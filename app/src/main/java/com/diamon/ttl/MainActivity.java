@@ -82,6 +82,8 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
                 textViewReceive.setText("");
             }
         });
+
+        appendToReceive("USB TTL Picard Communicator ready.\n");
     }
 
     private void connectSerial() {
