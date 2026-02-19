@@ -47,6 +47,11 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
 
         spinnerBaudRate = findViewById(R.id.spinnerBaudRate);
 
+        btnAllOn = findViewById(R.id.btnAllOn);
+        btnAllOff = findViewById(R.id.btnAllOff);
+        btnTask1 = findViewById(R.id.btnTask1);
+        btnTask2 = findViewById(R.id.btnTask2);
+
         ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(this,
                 R.array.baudrates, android.R.layout.simple_spinner_item);
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
@@ -84,11 +89,6 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
                 textViewReceive.setText("");
             }
         });
-
-        btnAllOn = findViewById(R.id.btnAllOn);
-        btnAllOff = findViewById(R.id.btnAllOff);
-        btnTask1 = findViewById(R.id.btnTask1);
-        btnTask2 = findViewById(R.id.btnTask2);
 
         View.OnClickListener taskListener = new View.OnClickListener() {
             @Override

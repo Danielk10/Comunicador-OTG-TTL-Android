@@ -94,11 +94,19 @@ public class UsbSerialManager implements SerialInputOutputManager.Listener {
         @Override
         public void onReceive(Context ctx, Intent intent) {
             String action = intent.getAction();
-            if (!ACTION_USB_PERMISSION.equals(action)) return;
+            if (!ACTION_USB_PERMISSION.equals(action))
+                return;
 
-            UsbDevice device = intent.getParcelableExtra(UsbManager.EXTRA_DEVICE);
+            UsbDevice device;
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                device = intent.getParcelableExtra(UsbManager.EXTRA_DEVICE, UsbDevice.class);
+            } else {
+                device = intent.getParcelableExtra(UsbManager.EXTRA_DEVICE);
+            }
+
             if (device == null) {
-                if (listener != null) listener.onSerialConnectError(new Exception("Dispositivo USB nulo"));
+                if (listener != null)
+                    listener.onSerialConnectError(new Exception("Dispositivo USB nulo"));
                 return;
             }
 
@@ -111,7 +119,8 @@ public class UsbSerialManager implements SerialInputOutputManager.Listener {
                     }
                 }
             } else {
-                if (listener != null) listener.onSerialConnectError(new Exception("Permiso USB denegado"));
+                if (listener != null)
+                    listener.onSerialConnectError(new Exception("Permiso USB denegado"));
             }
         }
     };
@@ -119,7 +128,8 @@ public class UsbSerialManager implements SerialInputOutputManager.Listener {
     private void connectToDevice(UsbSerialDriver driver) {
         UsbDeviceConnection connection = usbManager.openDevice(driver.getDevice());
         if (connection == null) {
-            if (listener != null) listener.onSerialConnectError(new Exception("No se pudo abrir el dispositivo USB"));
+            if (listener != null)
+                listener.onSerialConnectError(new Exception("No se pudo abrir el dispositivo USB"));
             return;
         }
 
@@ -132,17 +142,20 @@ public class UsbSerialManager implements SerialInputOutputManager.Listener {
             ioManager.start();
 
             connected = true;
-            if (listener != null) listener.onSerialConnect();
+            if (listener != null)
+                listener.onSerialConnect();
 
         } catch (IOException e) {
             Log.e(TAG, "Error abriendo puerto serial", e);
-            if (listener != null) listener.onSerialConnectError(e);
+            if (listener != null)
+                listener.onSerialConnectError(e);
         }
     }
 
     public void sendData(byte[] data) {
         if (!connected || usbSerialPort == null) {
-            if (listener != null) listener.onSerialIoError(new Exception("Puerto serial no conectado"));
+            if (listener != null)
+                listener.onSerialIoError(new Exception("Puerto serial no conectado"));
             return;
         }
 
@@ -150,7 +163,8 @@ public class UsbSerialManager implements SerialInputOutputManager.Listener {
             usbSerialPort.write(data, 1000);
         } catch (IOException e) {
             Log.e(TAG, "Error enviando datos", e);
-            if (listener != null) listener.onSerialIoError(e);
+            if (listener != null)
+                listener.onSerialIoError(e);
         }
     }
 
@@ -174,7 +188,8 @@ public class UsbSerialManager implements SerialInputOutputManager.Listener {
         }
 
         connected = false;
-        if (listener != null) listener.onSerialDisconnect();
+        if (listener != null)
+            listener.onSerialDisconnect();
     }
 
     public boolean isConnected() {
@@ -184,18 +199,21 @@ public class UsbSerialManager implements SerialInputOutputManager.Listener {
     public void cleanup() {
         try {
             context.unregisterReceiver(usbPermissionReceiver);
-        } catch (Exception ignored) {}
+        } catch (Exception ignored) {
+        }
         disconnect();
     }
 
     @Override
     public void onNewData(byte[] data) {
-        if (listener != null) listener.onSerialRead(data);
+        if (listener != null)
+            listener.onSerialRead(data);
     }
 
     @Override
     public void onRunError(Exception e) {
         Log.e(TAG, "Error en SerialInputOutputManager", e);
-        if (listener != null) listener.onSerialIoError(e);
+        if (listener != null)
+            listener.onSerialIoError(e);
     }
 }
