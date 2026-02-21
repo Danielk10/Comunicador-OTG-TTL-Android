@@ -1,5 +1,6 @@
 package com.diamon.ttl;
 
+import android.graphics.Color;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.ArrayAdapter;
@@ -13,6 +14,11 @@ import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.hoho.android.usbserial.driver.UsbSerialPort;
+
+import java.nio.charset.StandardCharsets;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Locale;
 
 public class MainActivity extends AppCompatActivity implements UsbSerialListener {
 
@@ -30,6 +36,13 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
     private Spinner spinnerBaudRate;
 
     private Button btnAllOn, btnAllOff, btnTask1, btnTask2;
+
+    // Indicador de estado visual
+    private View statusDot;
+    private TextView tvStatusLabel;
+    private View layoutStatus;
+
+    private final SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm:ss", Locale.getDefault());
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -52,56 +65,35 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
         btnTask1 = findViewById(R.id.btnTask1);
         btnTask2 = findViewById(R.id.btnTask2);
 
+        statusDot = findViewById(R.id.statusDot);
+        tvStatusLabel = findViewById(R.id.tvStatusLabel);
+        layoutStatus = findViewById(R.id.layoutStatus);
+
         ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(this,
                 R.array.baudrates, android.R.layout.simple_spinner_item);
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         spinnerBaudRate.setAdapter(adapter);
-        spinnerBaudRate.setSelection(4); // 9600
+        spinnerBaudRate.setSelection(4); // 9600 por defecto
 
         serialManager = new UsbSerialManager(this, this);
 
         updateUIState(false);
 
-        btnConnect.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                connectSerial();
-            }
-        });
+        btnConnect.setOnClickListener(v -> connectSerial());
+        btnDisconnect.setOnClickListener(v -> disconnectSerial());
+        btnSend.setOnClickListener(v -> sendData());
+        btnClear.setOnClickListener(v -> textViewReceive.setText(""));
 
-        btnDisconnect.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                disconnectSerial();
-            }
-        });
-
-        btnSend.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                sendData();
-            }
-        });
-
-        btnClear.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                textViewReceive.setText("");
-            }
-        });
-
-        View.OnClickListener taskListener = new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (v.getId() == R.id.btnAllOn)
-                    serialManager.sendText("A");
-                else if (v.getId() == R.id.btnAllOff)
-                    serialManager.sendText("O");
-                else if (v.getId() == R.id.btnTask1)
-                    serialManager.sendText("T");
-                else if (v.getId() == R.id.btnTask2)
-                    serialManager.sendText("F");
-            }
+        View.OnClickListener taskListener = v -> {
+            int id = v.getId();
+            if (id == R.id.btnAllOn)
+                serialManager.sendText("A");
+            else if (id == R.id.btnAllOff)
+                serialManager.sendText("O");
+            else if (id == R.id.btnTask1)
+                serialManager.sendText("T");
+            else if (id == R.id.btnTask2)
+                serialManager.sendText("F");
         };
 
         btnAllOn.setOnClickListener(taskListener);
@@ -109,7 +101,8 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
         btnTask1.setOnClickListener(taskListener);
         btnTask2.setOnClickListener(taskListener);
 
-        appendToReceive("USB TTL Picard Communicator ready.\n");
+        appendToReceive("[Sistema] Comunicador OTG TTL listo.\n");
+        appendToReceive("[Sistema] Conecta el adaptador USB-TTL para comenzar.\n");
     }
 
     private void connectSerial() {
@@ -124,81 +117,85 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
     }
 
     private void sendData() {
-        String text = editTextSend.getText().toString();
+        String text = editTextSend.getText().toString().trim();
         if (!text.isEmpty()) {
+            appendToReceive("[" + timeFormat.format(new Date()) + "] >> " + text + "\n");
             serialManager.sendText(text + "\r\n");
             editTextSend.setText("");
         }
     }
 
     private void updateUIState(final boolean connected) {
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                btnConnect.setEnabled(!connected);
-                btnDisconnect.setEnabled(connected);
-                btnSend.setEnabled(connected);
-                spinnerBaudRate.setEnabled(!connected);
+        runOnUiThread(() -> {
+            btnConnect.setEnabled(!connected);
+            btnDisconnect.setEnabled(connected);
+            btnSend.setEnabled(connected);
+            spinnerBaudRate.setEnabled(!connected);
 
-                btnAllOn.setEnabled(connected);
-                btnAllOff.setEnabled(connected);
-                btnTask1.setEnabled(connected);
-                btnTask2.setEnabled(connected);
+            btnAllOn.setEnabled(connected);
+            btnAllOff.setEnabled(connected);
+            btnTask1.setEnabled(connected);
+            btnTask2.setEnabled(connected);
+
+            // Actualizar indicador visual de conexion
+            if (connected) {
+                statusDot.setBackgroundColor(Color.parseColor("#3FB950"));
+                tvStatusLabel.setText("Conectado");
+                tvStatusLabel.setTextColor(Color.parseColor("#3FB950"));
+                if (layoutStatus != null)
+                    layoutStatus.setBackgroundColor(Color.parseColor("#112211"));
+            } else {
+                statusDot.setBackgroundColor(Color.parseColor("#F85149"));
+                tvStatusLabel.setText("Desconectado");
+                tvStatusLabel.setTextColor(Color.parseColor("#F85149"));
+                if (layoutStatus != null)
+                    layoutStatus.setBackgroundColor(Color.parseColor("#1A0A0A"));
             }
         });
     }
 
     private void appendToReceive(final String text) {
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                textViewReceive.append(text);
-                scrollView.post(new Runnable() {
-                    @Override
-                    public void run() {
-                        scrollView.fullScroll(View.FOCUS_DOWN);
-                    }
-                });
-            }
+        runOnUiThread(() -> {
+            textViewReceive.append(text);
+            scrollView.post(() -> scrollView.fullScroll(View.FOCUS_DOWN));
         });
     }
 
     @Override
     public void onSerialConnect() {
-        Toast.makeText(this, "Conectado", Toast.LENGTH_SHORT).show();
+        Toast.makeText(this, "USB conectado correctamente", Toast.LENGTH_SHORT).show();
+        appendToReceive("[" + timeFormat.format(new Date()) + "] Conexion establecida.\n");
         updateUIState(true);
     }
 
     @Override
     public void onSerialConnectError(final Exception e) {
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                Toast.makeText(MainActivity.this, "Error: " + e.getMessage(), Toast.LENGTH_LONG).show();
-                updateUIState(false);
-            }
+        runOnUiThread(() -> {
+            Toast.makeText(MainActivity.this, "Error: " + e.getMessage(), Toast.LENGTH_LONG).show();
+            appendToReceive("[" + timeFormat.format(new Date()) + "] Error al conectar: " + e.getMessage() + "\n");
+            updateUIState(false);
         });
     }
 
     @Override
     public void onSerialRead(byte[] data) {
-        String text = new String(data);
-        appendToReceive(text);
+        // Usar UTF-8 explicito para evitar comportamiento dependiente de la plataforma
+        String text = new String(data, StandardCharsets.UTF_8);
+        appendToReceive("[" + timeFormat.format(new Date()) + "] " + text);
     }
 
     @Override
     public void onSerialIoError(final Exception e) {
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                Toast.makeText(MainActivity.this, "Error I/O: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-            }
+        runOnUiThread(() -> {
+            Toast.makeText(MainActivity.this, "Error I/O: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            appendToReceive("[" + timeFormat.format(new Date()) + "] Error I/O: " + e.getMessage() + "\n");
         });
     }
 
     @Override
     public void onSerialDisconnect() {
-        Toast.makeText(this, "Desconectado", Toast.LENGTH_SHORT).show();
+        Toast.makeText(this, "Dispositivo desconectado", Toast.LENGTH_SHORT).show();
+        appendToReceive("[" + timeFormat.format(new Date()) + "] Dispositivo desconectado.\n");
         updateUIState(false);
     }
 
