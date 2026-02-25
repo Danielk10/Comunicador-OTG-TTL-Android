@@ -11,4 +11,4 @@ Esta aplicación permite la comunicación bidireccional entre dispositivos Andro
 - ✅ Proyecto Android configurado con Gradle
 - ✅ Dependencia `usb-serial-for-android` añadida via catálogo de versiones
 - ✅ Estructura Java básica y UI creadas (MainActivity, UsbSerialManager, UsbSerialListener, layout, strings, device_filter)
-- ⏳ Pendiente: pruebas en hardware real y ajustes finos de protocolo según tu microcontrolador
+- ⏳ Pendiente: pruebas en hardware real y ajustes finos de protocolo según tu microcontrolador 
