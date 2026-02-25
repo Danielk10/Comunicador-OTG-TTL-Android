@@ -17,4 +17,45 @@
         <item>460800</item>
         <item>921600</item>
     </string-array>
+
+    <string-array name="eeprom_protocols">
+        <item>I2C (24Cxx)</item>
+        <item>SPI (25Cxx)</item>
+    </string-array>
+
+    <string-array name="eeprom_i2c_sizes">
+        <item>24C01</item>
+        <item>24C02</item>
+        <item>24C04</item>
+        <item>24C08</item>
+        <item>24C16</item>
+        <item>24C32</item>
+        <item>24C64</item>
+        <item>24C128</item>
+        <item>24C256</item>
+        <item>24C512</item>
+    </string-array>
+
+    <string-array name="eeprom_spi_sizes">
+        <item>25xx010</item>
+        <item>25xx020</item>
+        <item>25xx040</item>
+        <item>25xx080</item>
+        <item>25xx160</item>
+        <item>25xx320</item>
+        <item>25xx640</item>
+        <item>25xx128</item>
+        <item>25xx256</item>
+        <item>25xx512</item>
+        <item>25xx1024</item>
+    </string-array>
+
+    <string name="connect">Conectar</string>
+    <string name="disconnect">Desconectar</string>
+    <string name="status_disconnected">Desconectado</string>
+    <string name="status_connected">Conectado</string>
+    <string name="read_eeprom">Leer EEPROM</string>
+    <string name="write_eeprom">Escribir EEPROM</string>
+    <string name="save_eeprom">Guardar / Exportar (ROM)</string>
+    <string name="connection_instructions">Instrucciones de conexión</string>
 </resources>

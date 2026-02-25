@@ -36,6 +36,22 @@ uint8_t UART_Available(void);
 void UART_Flush_Errors(void);
 void UART_Write_Text(const char *text);
 void Delay_ms(uint16_t ms);
+void Delay_us(void);
+
+// Funciones I2C
+void I2C_Init(void);
+void I2C_Start(void);
+void I2C_Stop(void);
+void I2C_Ack(void);
+void I2C_Nack(void);
+uint8_t I2C_Write(uint8_t data);
+uint8_t I2C_Read(uint8_t ack);
+
+// Funciones SPI
+void SPI_Init(void);
+void SPI_Write(uint8_t data);
+uint8_t SPI_Read(void);
+
 
 // Pines de salida para tareas (se evitan RB1/RX y RB2/TX)
 #define PIN_TASK1 RB0
@@ -44,14 +60,38 @@ void Delay_ms(uint16_t ms);
 #define PIN_TASK4 RB5
 
 // =============================================================================
+// I2C y SPI Pines (Puerto A)
+// =============================================================================
+// I2C
+#define I2C_SDA_PIN RA0
+#define I2C_SDA_TRIS TRISA0
+#define I2C_SCL_PIN RA1
+#define I2C_SCL_TRIS TRISA1
+
+// SPI
+#define SPI_CS_PIN RA2
+#define SPI_CS_TRIS TRISA2
+#define SPI_SCK_PIN RA3
+#define SPI_SCK_TRIS TRISA3
+#define SPI_MISO_PIN RA5
+#define SPI_MISO_TRIS TRISA5
+#define SPI_MOSI_PIN RA6
+#define SPI_MOSI_TRIS TRISA6
+
+// =============================================================================
 // MAIN
 // =============================================================================
 void main(void) {
     char cmd;
+    uint8_t addr_hi, addr_lo, len, data, i;
 
     CMCON = 0x07;   // Comparadores analógicos OFF (todos los pines digitales)
     TRISB = 0x02;   // RB1=RX (Entrada), demás como Salida
     PORTB = 0x00;   // Todas las salidas en LOW
+    
+    // Inicializar pines de I2C y SPI
+    I2C_Init();
+    SPI_Init();
 
     UART_Init();
 
@@ -139,6 +179,100 @@ void main(void) {
                     UART_Write(PIN_TASK4 ? '1' : '0');
                     UART_Write_Text("\r\n");
                     break;
+
+                // =============================================================
+                // Comandos I2C EEPROM (24Cxx)
+                // Formato: 'I' 'R'/'W' <addr_len> <chip_addr> <addr_hi> <addr_lo> <len/data...>
+                // addr_len = 1 (small EEPROM 24c01-16), 2 (large EEPROM 24c32-512)
+                // =============================================================
+                case 'I': {
+                    char op = UART_Read();
+                    uint8_t addr_len = UART_Read();
+                    uint8_t chip_addr = UART_Read();
+                    addr_hi = UART_Read();
+                    addr_lo = UART_Read();
+
+                    if(op == 'R') {
+                        len = UART_Read();
+                        I2C_Start();
+                        I2C_Write(chip_addr);
+                        if(addr_len == 2) I2C_Write(addr_hi);
+                        I2C_Write(addr_lo);
+                        I2C_Start(); // Repeated start
+                        I2C_Write(chip_addr | 0x01); // Lectura
+                        for(i = 0; i < len; i++) {
+                            data = I2C_Read(i == (len - 1) ? 0 : 1);
+                            UART_Write(data);
+                        }
+                        I2C_Stop();
+                    } else if(op == 'W') {
+                        len = UART_Read();
+                        I2C_Start();
+                        I2C_Write(chip_addr);
+                        if(addr_len == 2) I2C_Write(addr_hi);
+                        I2C_Write(addr_lo);
+                        for(i = 0; i < len; i++) {
+                            data = UART_Read();
+                            I2C_Write(data);
+                        }
+                        I2C_Stop();
+                        Delay_ms(5); // Ciclo de escritura EEPROM I2C
+                        UART_Write('K'); // Acknowledge OK
+                    }
+                    break;
+                }
+
+                // =============================================================
+                // Comandos SPI EEPROM (25Cxx)
+                // Formato: 'P' 'R'/'W' <addr_hi> <addr_lo> <len/data...>
+                // (Usamos 'P' porque 'S' ya se usa para Status)
+                // =============================================================
+                case 'P': {
+                    char op = UART_Read();
+                    addr_hi = UART_Read();
+                    addr_lo = UART_Read();
+
+                    if(op == 'R') {
+                        len = UART_Read();
+                        SPI_CS_PIN = 0;
+                        SPI_Write(0x03); // Comando Leer (Read Data)
+                        SPI_Write(addr_hi);
+                        SPI_Write(addr_lo);
+                        for(i = 0; i < len; i++) {
+                            data = SPI_Read();
+                            UART_Write(data);
+                        }
+                        SPI_CS_PIN = 1;
+                    } else if(op == 'W') {
+                        len = UART_Read();
+                        // Habilitar escritura (WREN)
+                        SPI_CS_PIN = 0;
+                        SPI_Write(0x06); // WREN
+                        SPI_CS_PIN = 1;
+                        
+                        // Escribir datos (Page Program)
+                        SPI_CS_PIN = 0;
+                        SPI_Write(0x02); // Comando Escibir (Page Program)
+                        SPI_Write(addr_hi);
+                        SPI_Write(addr_lo);
+                        for(i = 0; i < len; i++) {
+                            data = UART_Read();
+                            SPI_Write(data);
+                        }
+                        SPI_CS_PIN = 1;
+                        
+                        // Esperar estado Ready (wip = 0)
+                        data = 0x01;
+                        while(data & 0x01) {
+                            SPI_CS_PIN = 0;
+                            SPI_Write(0x05); // Read Status Register
+                            data = SPI_Read();
+                            SPI_CS_PIN = 1;
+                        }
+                        UART_Write('K'); // Acknowledge OK
+                    }
+                    break;
+                }
 
                 default:
                     // Eco del carácter no reconocido para diagnóstico
@@ -246,4 +380,149 @@ void Delay_ms(uint16_t ms) {
             __endasm;
         }
     }
+}
+
+// =============================================================================
+// Delay_us — Retardo muy corto para I2C y SPI
+// =============================================================================
+void Delay_us(void) {
+    __asm
+        nop
+        nop
+        nop
+        nop
+    __endasm;
+}
+
+// =============================================================================
+// Implementación I2C Bit-Banging
+// Para un bus I2C, la línea debe dejarse como entrada (Alta impedancia) 
+// para enviar un '1' lógico (debido a la resistencia pull-up externa o interna).
+// Para un '0' lógico, la configuramos como salida y ponemos a bajo (0V).
+// Aquí simplificaremos: SCL siempre salida activa, SDA como in/out.
+// NOTA: Se asumen resistencias de pull-up externas en SDA y SCL.
+// =============================================================================
+void I2C_Init(void) {
+    I2C_SDA_PIN = 0;
+    I2C_SCL_PIN = 0;
+    I2C_SDA_TRIS = 1; // SDA Alta impedancia (Pull-Up = 1)
+    I2C_SCL_TRIS = 1; // SCL Alta impedancia (Pull-Up = 1)
+}
+
+void I2C_Start(void) {
+    I2C_SDA_TRIS = 1;
+    I2C_SCL_TRIS = 1;
+    Delay_us();
+    I2C_SDA_TRIS = 0; // SDA baja
+    I2C_SDA_PIN = 0;
+    Delay_us();
+    I2C_SCL_TRIS = 0; // SCL baja
+    I2C_SCL_PIN = 0;
+    Delay_us();
+}
+
+void I2C_Stop(void) {
+    I2C_SDA_TRIS = 0; 
+    I2C_SDA_PIN = 0;
+    Delay_us();
+    I2C_SCL_TRIS = 1; // SCL alta
+    Delay_us();
+    I2C_SDA_TRIS = 1; // SDA alta
+    Delay_us();
+}
+
+uint8_t I2C_Write(uint8_t data) {
+    uint8_t ack_bit, i;
+    for(i = 0; i < 8; i++) {
+        if(data & 0x80) {
+            I2C_SDA_TRIS = 1; // 1 (alta impedancia)
+        } else {
+            I2C_SDA_TRIS = 0; // 0
+            I2C_SDA_PIN = 0;
+        }
+        Delay_us();
+        I2C_SCL_TRIS = 1; // SCL Alta
+        Delay_us();
+        I2C_SCL_TRIS = 0; // SCL Baja
+        I2C_SCL_PIN = 0;
+        data <<= 1;
+    }
+    // Leer ACK
+    I2C_SDA_TRIS = 1; // Liberar SDA
+    Delay_us();
+    I2C_SCL_TRIS = 1; // SCL alta para leer
+    Delay_us();
+    ack_bit = I2C_SDA_PIN; // Leer bit de ack del esclavo
+    I2C_SCL_TRIS = 0; // SCL baja
+    I2C_SCL_PIN = 0;
+    return ack_bit; // 0 = ACK, 1 = NACK
+}
+
+uint8_t I2C_Read(uint8_t ack) {
+    uint8_t data = 0, i;
+    I2C_SDA_TRIS = 1; // Liberar SDA
+    for(i = 0; i < 8; i++) {
+        data <<= 1;
+        Delay_us();
+        I2C_SCL_TRIS = 1; // SCL Alta
+        Delay_us();
+        if(I2C_SDA_PIN) data |= 0x01; // Leer pin
+        I2C_SCL_TRIS = 0; // SCL Baja
+        I2C_SCL_PIN = 0;
+    }
+    // Enviar ACK/NACK
+    if(ack) {
+        I2C_SDA_TRIS = 0;
+        I2C_SDA_PIN = 0; // ACK (baja)
+    } else {
+        I2C_SDA_TRIS = 1; // NACK (alta)
+    }
+    Delay_us();
+    I2C_SCL_TRIS = 1;
+    Delay_us();
+    I2C_SCL_TRIS = 0;
+    I2C_SCL_PIN = 0;
+    
+    return data;
+}
+
+// =============================================================================
+// Implementación SPI Bit-Banging (Modo 0, 0: SCK inactivo bajo, dato capturado en flanco de subida)
+// =============================================================================
+void SPI_Init(void) {
+    SPI_CS_TRIS = 0;   // CS Salida
+    SPI_SCK_TRIS = 0;  // SCK Salida
+    SPI_MOSI_TRIS = 0; // MOSI Salida
+    SPI_MISO_TRIS = 1; // MISO Entrada
+    
+    SPI_CS_PIN = 1;    // Inactivo Alto
+    SPI_SCK_PIN = 0;   // Reloj inactivo Bajo
+    SPI_MOSI_PIN = 0;
+}
+
+void SPI_Write(uint8_t data) {
+    uint8_t i;
+    for(i = 0; i < 8; i++) {
+        if(data & 0x80) SPI_MOSI_PIN = 1;
+        else            SPI_MOSI_PIN = 0;
+        Delay_us();
+        SPI_SCK_PIN = 1; // Flanco subida (esclavo lee)
+        Delay_us();
+        SPI_SCK_PIN = 0; // Flanco bajada
+        data <<= 1;
+    }
+}
+
+uint8_t SPI_Read(void) {
+    uint8_t data = 0, i;
+    SPI_MOSI_PIN = 0;
+    for(i = 0; i < 8; i++) {
+        data <<= 1;
+        Delay_us();
+        SPI_SCK_PIN = 1; // Flanco subida (esclavo cambia o mantiene dato)
+        Delay_us();
+        if(SPI_MISO_PIN) data |= 0x01; // Leemos en el estado alto (Modo 0) o flanco bajada
+        SPI_SCK_PIN = 0; // Flanco bajada
+    }
+    return data;
 }
