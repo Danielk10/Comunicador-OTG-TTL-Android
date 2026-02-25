@@ -83,7 +83,7 @@ uint8_t SPI_Read(void);
 // =============================================================================
 void main(void) {
     char cmd;
-    uint8_t addr_hi, addr_lo, len, data, i;
+    uint8_t addr_hi, addr_md, addr_lo, len, data, i;
 
     CMCON = 0x07;   // Comparadores analógicos OFF (todos los pines digitales)
     TRISB = 0x02;   // RB1=RX (Entrada), demás como Salida
@@ -224,19 +224,23 @@ void main(void) {
 
                 // =============================================================
                 // Comandos SPI EEPROM (25Cxx)
-                // Formato: 'P' 'R'/'W' <addr_hi> <addr_lo> <len/data...>
+                // Formato: 'P' 'R'/'W' <addr_len> <addr_hi> <addr_mid> <addr_lo> <len/data...>
                 // (Usamos 'P' porque 'S' ya se usa para Status)
+                // addr_len = 2 (<= 64KB), 3 (> 64KB)
                 // =============================================================
                 case 'P': {
                     char op = UART_Read();
+                    uint8_t addr_len = UART_Read();
                     addr_hi = UART_Read();
+                    addr_md = UART_Read();
                     addr_lo = UART_Read();
 
                     if(op == 'R') {
                         len = UART_Read();
                         SPI_CS_PIN = 0;
                         SPI_Write(0x03); // Comando Leer (Read Data)
-                        SPI_Write(addr_hi);
+                        if(addr_len == 3) SPI_Write(addr_hi);
+                        SPI_Write(addr_md);
                         SPI_Write(addr_lo);
                         for(i = 0; i < len; i++) {
                             data = SPI_Read();
@@ -253,7 +257,8 @@ void main(void) {
                         // Escribir datos (Page Program)
                         SPI_CS_PIN = 0;
                         SPI_Write(0x02); // Comando Escibir (Page Program)
-                        SPI_Write(addr_hi);
+                        if(addr_len == 3) SPI_Write(addr_hi);
+                        SPI_Write(addr_md);
                         SPI_Write(addr_lo);
                         for(i = 0; i < len; i++) {
                             data = UART_Read();

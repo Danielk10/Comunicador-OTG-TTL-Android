@@ -34,6 +34,8 @@
         <item>24Cxx 128Kb (16384 bytes)</item>
         <item>24Cxx 256Kb (32768 bytes)</item>
         <item>24Cxx 512Kb (65536 bytes)</item>
+        <item>24Cxx 1Mb (131072 bytes)</item>
+        <item>24Cxx 2Mb (262144 bytes)</item>
     </string-array>
 
     <string-array name="eeprom_spi_sizes">
@@ -47,6 +49,9 @@
         <item>25Cxx 128Kb (16384 bytes)</item>
         <item>25Cxx 256Kb (32768 bytes)</item>
         <item>25Cxx 512Kb (65536 bytes)</item>
+        <item>25Cxx 1Mb (131072 bytes)</item>
+        <item>25Cxx 2Mb (262144 bytes)</item>
+        <item>25Cxx 4Mb (524288 bytes)</item>
     </string-array>
 
     <string name="connect">Conectar</string>

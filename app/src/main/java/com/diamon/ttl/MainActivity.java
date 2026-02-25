@@ -58,8 +58,9 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
     private Handler taskHandler = new Handler(Looper.getMainLooper());
     private Runnable timeoutRunnable;
 
-    private final int[] i2cSizes = { 128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536 };
-    private final int[] spiSizes = { 128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536 };
+    private final int[] i2cSizes = { 128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536, 131072, 262144 };
+    private final int[] spiSizes = { 128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536, 131072, 262144,
+            524288 };
 
     private androidx.activity.result.ActivityResultLauncher<Intent> filePickerLauncher;
 
@@ -263,16 +264,22 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
             if (addrLen == 1) {
                 // Las EEPROMS I2C pequeñas unen la parte alta de la address con el device pin
                 chipAddr |= ((currentAddress >> 8) & 0x07) << 1;
+            } else {
+                // I2C > 64KB (ej. 24C1024) usan pines P0/P1 para el bloque
+                chipAddr |= ((currentAddress >> 16) & 0x03) << 1;
             }
             byte addrHi = (byte) ((currentAddress >> 8) & 0xFF);
             byte addrLo = (byte) (currentAddress & 0xFF);
 
             cmd = new byte[] { 'I', 'R', addrLen, chipAddr, addrHi, addrLo, (byte) len };
         } else { // SPI
-            // 'P' 'R' <addr_hi> <addr_lo> <len>
-            byte addrHi = (byte) ((currentAddress >> 8) & 0xFF);
+            // 'P' 'R' <addr_len> <addr_hi> <addr_mid> <addr_lo> <len>
+            int modelIdx = spinnerModel.getSelectedItemPosition();
+            byte addrLen = (byte) (modelIdx >= 10 ? 3 : 2); // >= 1Mb (131072 bytes) = 3 bytes address
+            byte addrHi = (byte) ((currentAddress >> 16) & 0xFF);
+            byte addrMid = (byte) ((currentAddress >> 8) & 0xFF);
             byte addrLo = (byte) (currentAddress & 0xFF);
-            cmd = new byte[] { 'P', 'R', addrHi, addrLo, (byte) len };
+            cmd = new byte[] { 'P', 'R', addrLen, addrHi, addrMid, addrLo, (byte) len };
         }
 
         serialManager.sendData(cmd);
@@ -401,16 +408,21 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
                 byte chipAddr = (byte) 0xA0;
                 if (addrLen == 1) {
                     chipAddr |= ((currentAddress >> 8) & 0x07) << 1;
+                } else {
+                    chipAddr |= ((currentAddress >> 16) & 0x03) << 1;
                 }
                 byte addrHi = (byte) ((currentAddress >> 8) & 0xFF);
                 byte addrLo = (byte) (currentAddress & 0xFF);
 
                 cmdStream.write(new byte[] { 'I', 'W', addrLen, chipAddr, addrHi, addrLo, (byte) len });
             } else { // SPI
-                // 'P' 'W' <addr_hi> <addr_lo> <len> <data...>
-                byte addrHi = (byte) ((currentAddress >> 8) & 0xFF);
+                // 'P' 'W' <addr_len> <addr_hi> <addr_mid> <addr_lo> <len> <data...>
+                int modelIdx = spinnerModel.getSelectedItemPosition();
+                byte addrLen = (byte) (modelIdx >= 10 ? 3 : 2); // >= 1Mb (131072 bytes) = 3 bytes address
+                byte addrHi = (byte) ((currentAddress >> 16) & 0xFF);
+                byte addrMid = (byte) ((currentAddress >> 8) & 0xFF);
                 byte addrLo = (byte) (currentAddress & 0xFF);
-                cmdStream.write(new byte[] { 'P', 'W', addrHi, addrLo, (byte) len });
+                cmdStream.write(new byte[] { 'P', 'W', addrLen, addrHi, addrMid, addrLo, (byte) len });
             }
             // Adjuntar datos
             cmdStream.write(writeDataBuffer, currentAddress, len);
