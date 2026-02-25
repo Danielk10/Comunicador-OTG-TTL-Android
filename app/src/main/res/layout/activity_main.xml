@@ -33,40 +33,56 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:background="#1A0A0A"
-            android:gravity="center_vertical"
-            android:orientation="horizontal"
-            android:padding="12dp">
+            android:orientation="vertical"
+            android:padding="16dp">
 
-            <View
-                android:id="@+id/statusDot"
-                android:layout_width="16dp"
-                android:layout_height="16dp"
-                android:background="#F85149" />
-
-            <TextView
-                android:id="@+id/tvStatusLabel"
-                android:layout_width="0dp"
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="12dp"
-                android:layout_weight="1"
-                android:text="@string/status_disconnected"
-                android:textColor="#F85149"
-                android:textSize="18sp"
-                android:textStyle="bold" />
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
 
-            <Button
-                android:id="@+id/btnConnect"
-                android:layout_width="120dp"
-                android:layout_height="wrap_content"
-                android:text="@string/connect" />
+                <View
+                    android:id="@+id/statusDot"
+                    android:layout_width="14dp"
+                    android:layout_height="14dp"
+                    android:background="#F85149" />
 
-            <Button
-                android:id="@+id/btnDisconnect"
-                android:layout_width="120dp"
+                <TextView
+                    android:id="@+id/tvStatusLabel"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="12dp"
+                    android:layout_weight="1"
+                    android:text="@string/status_disconnected"
+                    android:textColor="#F85149"
+                    android:textSize="18sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="8dp"
-                android:enabled="false"
-                android:text="@string/disconnect" />
+                android:layout_marginTop="12dp"
+                android:orientation="horizontal">
+
+                <Button
+                    android:id="@+id/btnConnect"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginEnd="4dp"
+                    android:text="@string/connect" />
+
+                <Button
+                    android:id="@+id/btnDisconnect"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginStart="4dp"
+                    android:enabled="false"
+                    android:text="@string/disconnect" />
+            </LinearLayout>
         </LinearLayout>
 
         <TextView
