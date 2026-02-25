@@ -64,8 +64,8 @@ public class IntelHexFormat {
                 } else if (type == 0x04) { // Ext Linear
                     extendedLinearAddress = Integer.parseInt(line.substring(9, 13), 16);
                 }
-            } catch (NumberFormatException e) {
-                throw new HexParseException("Error parseando los valores hexadecimales de la línea: " + line, e);
+            } catch (Exception e) {
+                throw new HexParseException("Error parseando los valores de la línea: " + line, e);
             }
         }
 
