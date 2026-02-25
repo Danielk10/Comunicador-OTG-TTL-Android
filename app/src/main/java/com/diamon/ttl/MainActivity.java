@@ -14,6 +14,7 @@ import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.ProgressBar;
+import android.widget.ScrollView;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -28,6 +29,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 
 public class MainActivity extends AppCompatActivity implements UsbSerialListener {
 
@@ -35,7 +37,8 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
 
     private Button btnConnect, btnDisconnect, btnRead, btnWrite, btnSave;
     private Spinner spinnerBaudRate, spinnerProtocol, spinnerModel;
-    private TextView tvStatusLabel, tvInstructions, tvHexViewer;
+    private TextView tvStatusLabel, tvInstructions, tvHexViewer, tvLog;
+    private ScrollView scrollLog;
     private View statusDot, layoutStatus;
     private ProgressBar progressBar;
 
@@ -102,6 +105,8 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
         tvStatusLabel = findViewById(R.id.tvStatusLabel);
         tvInstructions = findViewById(R.id.tvInstructions);
         tvHexViewer = findViewById(R.id.tvHexViewer);
+        tvLog = findViewById(R.id.tvLog);
+        scrollLog = findViewById(R.id.scrollLog);
 
         statusDot = findViewById(R.id.statusDot);
         layoutStatus = findViewById(R.id.layoutStatus);
@@ -154,11 +159,24 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
     private void connectSerial() {
         int baudRate = Integer.parseInt(spinnerBaudRate.getSelectedItem().toString());
         serialManager.setSerialParameters(baudRate, 8, UsbSerialPort.STOPBITS_1, UsbSerialPort.PARITY_NONE);
+        log("Conectando puerto serial a " + baudRate + " baudios...");
         serialManager.connect();
     }
 
     private void disconnectSerial() {
+        log("Desconectando puerto serial...");
         serialManager.disconnect();
+    }
+
+    private void log(final String message) {
+        runOnUiThread(() -> {
+            if (tvLog == null || scrollLog == null)
+                return;
+            String time = new java.text.SimpleDateFormat("HH:mm:ss", java.util.Locale.getDefault())
+                    .format(new java.util.Date());
+            tvLog.append("[" + time + "] " + message + "\n");
+            scrollLog.post(() -> scrollLog.fullScroll(View.FOCUS_DOWN));
+        });
     }
 
     // =========================================================================
@@ -177,6 +195,8 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
         int proto = spinnerProtocol.getSelectedItemPosition();
         int model = spinnerModel.getSelectedItemPosition();
         totalSize = (proto == 0) ? i2cSizes[model] : spiSizes[model];
+
+        log("Iniciando lectura de " + totalSize + " bytes " + (proto == 0 ? "I2C" : "SPI") + "...");
 
         progressBar.setMax(totalSize);
         progressBar.setProgress(0);
@@ -229,6 +249,7 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
         eepromBuffer = readStream.toByteArray();
         progressBar.setVisibility(View.GONE);
         taskHandler.removeCallbacks(timeoutRunnable);
+        log("Lectura completada exitosamente.");
         Toast.makeText(this, "Lectura completada", Toast.LENGTH_SHORT).show();
         updateUIState(true);
         renderHexViewer(eepromBuffer);
@@ -268,19 +289,48 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
                 buffer.write(data, 0, nRead);
             }
             buffer.flush();
-            writeDataBuffer = buffer.toByteArray();
+            byte[] rawFileData = buffer.toByteArray();
             is.close();
 
             int proto = spinnerProtocol.getSelectedItemPosition();
             int model = spinnerModel.getSelectedItemPosition();
             totalSize = (proto == 0) ? i2cSizes[model] : spiSizes[model];
 
+            String fileName = "Archivo";
+            android.database.Cursor cursor = getContentResolver().query(uri, null, null, null, null);
+            if (cursor != null && cursor.moveToFirst()) {
+                int nameIndex = cursor.getColumnIndex(android.provider.OpenableColumns.DISPLAY_NAME);
+                if (nameIndex != -1) {
+                    fileName = cursor.getString(nameIndex);
+                }
+                cursor.close();
+            }
+
+            log("Cargado archivo: " + fileName + " (" + rawFileData.length + " bytes)");
+
+            if (fileName.toLowerCase().endsWith(".hex") || (rawFileData.length > 0 && rawFileData[0] == ':')) {
+                log("Detectado formato Intel Hex. Parseando...");
+                try {
+                    writeDataBuffer = parseIntelHex(rawFileData, totalSize);
+                    log("Intel Hex procesado. " + writeDataBuffer.length + " bytes resultantes.");
+                } catch (Exception ex) {
+                    log("Error parseando Intel Hex: " + ex.getMessage());
+                    log("Tratando contenido como Binario Puro...");
+                    writeDataBuffer = rawFileData;
+                }
+            } else {
+                log("Detectado formato Binario Puro.");
+                writeDataBuffer = rawFileData;
+            }
+
             if (writeDataBuffer.length > totalSize) {
-                Toast.makeText(this, "El archivo es más grande que la memoria (" + writeDataBuffer.length + " bytes / "
-                        + totalSize + " bytes max)", Toast.LENGTH_LONG).show();
+                log("Error: El archivo de escritura (" + writeDataBuffer.length
+                        + " bytes) es más grande que el límite de la memoria (" + totalSize + " bytes).");
+                Toast.makeText(this, "Archivo excede la capacidad de la memoria", Toast.LENGTH_LONG).show();
                 return;
             }
 
+            log("Iniciando escritura de " + writeDataBuffer.length + " bytes en memoria...");
             isWriting = true;
             currentAddress = 0;
             progressBar.setMax(writeDataBuffer.length);
@@ -343,6 +393,7 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
         isWriting = false;
         progressBar.setVisibility(View.GONE);
         taskHandler.removeCallbacks(timeoutRunnable);
+        log("Escritura completada exitosamente.");
         Toast.makeText(this, "Escritura completada", Toast.LENGTH_SHORT).show();
         tvHexViewer.setText("Escritura finalizada con éxito.");
         updateUIState(true);
@@ -354,6 +405,7 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
 
     private void saveBuffer() {
         if (eepromBuffer == null || eepromBuffer.length == 0) {
+            log("Error: No hay datos en el buffer para guardar.");
             Toast.makeText(this, "No hay datos leídos para guardar.", Toast.LENGTH_SHORT).show();
             return;
         }
@@ -364,16 +416,134 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
             if (!romDir.exists())
                 romDir.mkdirs();
 
-            String fileName = "eeprom_dump_" + System.currentTimeMillis() + ".bin";
-            File file = new File(romDir, fileName);
-            FileOutputStream fos = new FileOutputStream(file);
-            fos.write(eepromBuffer);
-            fos.close();
+            // Guardar BIN
+            String fileNameBin = "eeprom_dump_" + System.currentTimeMillis() + ".bin";
+            File fileBin = new File(romDir, fileNameBin);
+            FileOutputStream fosBin = new FileOutputStream(fileBin);
+            fosBin.write(eepromBuffer);
+            fosBin.close();
+            log("Guardado BIN: " + fileBin.getName());
 
-            Toast.makeText(this, "Archivo guardado en: " + file.getAbsolutePath(), Toast.LENGTH_LONG).show();
+            // Guardar HEX
+            String fileNameHex = "eeprom_dump_" + System.currentTimeMillis() + ".hex";
+            File fileHex = new File(romDir, fileNameHex);
+            FileOutputStream fosHex = new FileOutputStream(fileHex);
+            fosHex.write(generateIntelHex(eepromBuffer).getBytes(StandardCharsets.UTF_8));
+            fosHex.close();
+            log("Guardado HEX: " + fileHex.getName());
+
+            Toast.makeText(this, "Archivos guardados en Descargas/rom/", Toast.LENGTH_LONG).show();
         } catch (Exception e) {
+            log("Error guardando archivos: " + e.getMessage());
             Toast.makeText(this, "Error guardando: " + e.getMessage(), Toast.LENGTH_LONG).show();
         }
+    }
+
+    private byte[] parseIntelHex(byte[] fileData, int targetSize) throws Exception {
+        String content = new String(fileData, StandardCharsets.UTF_8);
+        String[] lines = content.split("\\r?\\n");
+
+        byte[] buffer = new byte[targetSize];
+        java.util.Arrays.fill(buffer, (byte) 0xFF);
+
+        int extendedLinearAddress = 0;
+        int extendedSegmentAddress = 0;
+        int highestAddress = 0;
+
+        for (String line : lines) {
+            line = line.trim();
+            if (line.isEmpty())
+                continue;
+            if (!line.startsWith(":")) {
+                throw new Exception("Línea no inicia con ':': " + line);
+            }
+            if (line.length() < 11)
+                throw new Exception("Línea muy corta: " + line);
+
+            int len = Integer.parseInt(line.substring(1, 3), 16);
+            int addr = Integer.parseInt(line.substring(3, 7), 16);
+            int type = Integer.parseInt(line.substring(7, 9), 16);
+
+            // Validar checksum
+            int checksum = 0;
+            for (int i = 1; i < line.length() - 1; i += 2) {
+                checksum += Integer.parseInt(line.substring(i, i + 2), 16);
+            }
+            if ((checksum & 0xFF) != 0) {
+                log("Advertencia del parser: Checksum inválido en línea -> " + line);
+            }
+
+            if (type == 0x00) { // Data record
+                int baseAddress = (extendedLinearAddress << 16) + (extendedSegmentAddress << 4);
+                int finalAddress = baseAddress + addr;
+
+                for (int i = 0; i < len; i++) {
+                    int dataByte = Integer.parseInt(line.substring(9 + i * 2, 11 + i * 2), 16);
+                    if (finalAddress + i < targetSize) {
+                        buffer[finalAddress + i] = (byte) dataByte;
+                        if (finalAddress + i > highestAddress)
+                            highestAddress = finalAddress + i;
+                    }
+                }
+            } else if (type == 0x01) { // EOF
+                break;
+            } else if (type == 0x02) { // Ext Segment
+                extendedSegmentAddress = Integer.parseInt(line.substring(9, 13), 16);
+            } else if (type == 0x04) { // Ext Linear
+                extendedLinearAddress = Integer.parseInt(line.substring(9, 13), 16);
+            }
+        }
+
+        int actualSize = highestAddress + 1;
+        if (actualSize == 0)
+            return new byte[0];
+
+        // Ajustamos al bloque mínimo (16 bytes) para no romper el buffer UART de
+        // refilón
+        if (actualSize % 16 != 0) {
+            actualSize = ((actualSize / 16) + 1) * 16;
+        }
+
+        byte[] trimmedBuffer = new byte[actualSize];
+        System.arraycopy(buffer, 0, trimmedBuffer, 0, actualSize);
+        return trimmedBuffer;
+    }
+
+    private String generateIntelHex(byte[] data) {
+        StringBuilder sb = new StringBuilder();
+        int address = 0;
+        while (address < data.length) {
+            int len = Math.min(16, data.length - address);
+            // Si pasamos los 64KB, generar registro Extended Linear Address (Type 04)
+            if ((address % 65536) == 0 && address > 0) { // Only generate if address is not 0 and is a multiple of 64KB
+                int extAddr = address >> 16;
+                String extRec = String.format("02000004%04X", extAddr);
+                int extChecksum = calculateHexChecksum(extRec);
+                sb.append(":").append(extRec).append(String.format("%02X", extChecksum)).append("\n");
+            }
+
+            int addr16 = address & 0xFFFF;
+            StringBuilder rec = new StringBuilder();
+            rec.append(String.format("%02X%04X%02X", len, addr16, 0x00)); // Type 00 (Data)
+            for (int i = 0; i < len; i++) {
+                rec.append(String.format("%02X", data[address + i]));
+            }
+            int checksum = calculateHexChecksum(rec.toString());
+            sb.append(":").append(rec.toString()).append(String.format("%02X", checksum)).append("\n");
+
+            address += len;
+        }
+        // EOF record
+        sb.append(":00000001FF\n");
+        return sb.toString();
+    }
+
+    private int calculateHexChecksum(String hexRecord) {
+        int sum = 0;
+        for (int i = 0; i < hexRecord.length(); i += 2) {
+            sum += Integer.parseInt(hexRecord.substring(i, i + 2), 16);
+        }
+        return (256 - (sum & 0xFF)) & 0xFF; // Complemento a 2
     }
 
     // =========================================================================
@@ -465,6 +635,7 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
     @Override
     public void onSerialConnect() {
         runOnUiThread(() -> {
+            log("Puerto USB inicializado con éxito.");
             Toast.makeText(this, "USB conectado", Toast.LENGTH_SHORT).show();
             updateUIState(true);
         });
@@ -473,6 +644,7 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
     @Override
     public void onSerialConnectError(Exception e) {
         runOnUiThread(() -> {
+            log("Error de conexión USB: " + e.getMessage());
             Toast.makeText(this, "Error: " + e.getMessage(), Toast.LENGTH_LONG).show();
             updateUIState(false);
         });
@@ -520,6 +692,7 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
     @Override
     public void onSerialIoError(Exception e) {
         runOnUiThread(() -> {
+            log("Error I/O: " + e.getMessage());
             Toast.makeText(this, "Error I/O: " + e.getMessage(), Toast.LENGTH_SHORT).show();
             updateUIState(false);
         });
@@ -528,6 +701,7 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
     @Override
     public void onSerialDisconnect() {
         runOnUiThread(() -> {
+            log("Dispositivo desconectado.");
             Toast.makeText(this, "Desconectado", Toast.LENGTH_SHORT).show();
             updateUIState(false);
         });
