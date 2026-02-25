@@ -13,7 +13,7 @@
         app:titleTextColor="#FFFFFF"
         app:title="Programador EEPROM"
         android:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar"
-        app:popupTheme="@style/ThemeOverlay.AppCompat.Light" />
+        app:popupTheme="@style/ThemeOverlay.AppCompat.Dark" />
 
     <ScrollView
         android:layout_width="match_parent"
@@ -163,10 +163,10 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:background="#EEEEEE"
+            android:background="@color/info_bg"
             android:padding="8dp"
             android:text="Selecciona un protocolo para ver las instrucciones."
-            android:textColor="#333333"
+            android:textColor="@color/info_text"
             android:typeface="monospace"/>
 
         <TextView
