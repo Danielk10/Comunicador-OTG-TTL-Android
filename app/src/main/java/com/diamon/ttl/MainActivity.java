@@ -20,14 +20,22 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+
+import com.diamon.ttl.eeprom.EepromProtocol;
+import com.diamon.ttl.eeprom.I2cProtocol;
+import com.diamon.ttl.eeprom.SpiProtocol;
+import com.diamon.ttl.exception.HexParseException;
+import com.diamon.ttl.file.FileManager;
+import com.diamon.ttl.file.IntelHexFormat;
+import com.diamon.ttl.ui.HexViewerHelper;
+import com.diamon.ttl.ui.LogHelper;
+import com.diamon.ttl.usb.ProtocolState;
 
 import com.hoho.android.usbserial.driver.UsbSerialPort;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 
@@ -37,15 +45,15 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
 
     private Button btnConnect, btnDisconnect, btnRead, btnWrite, btnSave;
     private Spinner spinnerBaudRate, spinnerProtocol, spinnerModel;
-    private TextView tvStatusLabel, tvInstructions, tvHexViewer, tvLog;
-    private ScrollView scrollLog;
+    private TextView tvStatusLabel, tvInstructions;
     private View statusDot, layoutStatus;
     private ProgressBar progressBar;
 
-    private boolean isReading = false;
-    private boolean isWriting = false;
+    private ProtocolState state = ProtocolState.IDLE;
 
-    // EEPROM Buffer and State Machine
+    private LogHelper logHelper;
+    private HexViewerHelper hexHelper;
+
     private byte[] eepromBuffer;
     private byte[] writeDataBuffer;
     private int currentAddress = 0;
@@ -53,14 +61,12 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
     private ByteArrayOutputStream readStream;
     private final int MAX_WRITE_CHUNK_SIZE = 64;
     private final int READ_CHUNK_SIZE = 64;
-    private long lastUiUpdateTime = 0;
 
     private Handler taskHandler = new Handler(Looper.getMainLooper());
     private Runnable timeoutRunnable;
 
-    private final int[] i2cSizes = { 128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536, 131072, 262144 };
-    private final int[] spiSizes = { 128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536, 131072, 262144,
-            524288 };
+    private final I2cProtocol i2cProtocol = new I2cProtocol();
+    private final SpiProtocol spiProtocol = new SpiProtocol();
 
     private androidx.activity.result.ActivityResultLauncher<Intent> filePickerLauncher;
 
@@ -96,12 +102,12 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
         btnSave.setOnClickListener(v -> saveBuffer());
 
         timeoutRunnable = () -> {
-            if (isReading) {
-                isReading = false;
+            if (state == ProtocolState.READING) {
+                state = ProtocolState.IDLE;
                 Toast.makeText(this, "Tiempo de espera agotado leyendo EEPROM", Toast.LENGTH_SHORT).show();
             }
-            if (isWriting) {
-                isWriting = false;
+            if (state == ProtocolState.WRITING) {
+                state = ProtocolState.IDLE;
                 Toast.makeText(this, "Tiempo de espera agotado escribiendo EEPROM", Toast.LENGTH_SHORT).show();
             }
             updateUIState(serialManager.isConnected());
@@ -122,13 +128,17 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
 
         tvStatusLabel = findViewById(R.id.tvStatusLabel);
         tvInstructions = findViewById(R.id.tvInstructions);
-        tvHexViewer = findViewById(R.id.tvHexViewer);
-        tvLog = findViewById(R.id.tvLog);
-        scrollLog = findViewById(R.id.scrollLog);
+
+        TextView tvHexViewer = findViewById(R.id.tvHexViewer);
+        TextView tvLog = findViewById(R.id.tvLog);
+        ScrollView scrollLog = findViewById(R.id.scrollLog);
 
         statusDot = findViewById(R.id.statusDot);
         layoutStatus = findViewById(R.id.layoutStatus);
         progressBar = findViewById(R.id.progressBar);
+
+        logHelper = new LogHelper(this, tvLog, scrollLog);
+        hexHelper = new HexViewerHelper(this, tvHexViewer);
     }
 
     private void setupSpinners() {
@@ -147,7 +157,7 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
                 updateModelSpinner(position);
-                updateInstructions(position);
+                tvInstructions.setText(getActiveProtocol().getHardwareInstructions());
             }
 
             @Override
@@ -156,79 +166,16 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
         });
     }
 
+    private EepromProtocol getActiveProtocol() {
+        return spinnerProtocol.getSelectedItemPosition() == 0 ? i2cProtocol : spiProtocol;
+    }
+
     private void updateModelSpinner(int protocolIndex) {
         int arrayResId = (protocolIndex == 0) ? R.array.eeprom_i2c_sizes : R.array.eeprom_spi_sizes;
         ArrayAdapter<CharSequence> modelAdapter = ArrayAdapter.createFromResource(this, arrayResId,
                 android.R.layout.simple_spinner_item);
         modelAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         spinnerModel.setAdapter(modelAdapter);
-    }
-
-    private int getPageSize(int protocolIndex, int modelIndex) {
-        if (protocolIndex == 0) { // I2C
-            // 24C01 / 24C02 = 8 bytes
-            if (modelIndex <= 1)
-                return 8;
-            // 24C04 / 24C08 / 24C16 = 16 bytes
-            if (modelIndex <= 4)
-                return 16;
-            // 24C32 / 24C64 = 32 bytes
-            if (modelIndex <= 6)
-                return 32;
-            // 24C128 / 24C256 / 24C512 = 64 bytes
-            if (modelIndex <= 9)
-                return 64;
-            // 1Mb, 2Mb = 256 bytes
-            return 256;
-        } else { // SPI
-            // 25010 / 25020 = 8 bytes (limite físico real mas bajo)
-            if (modelIndex <= 1)
-                return 8;
-            // 25040 / 25080 / 25160 = 16 bytes
-            if (modelIndex <= 4)
-                return 16;
-            // 25320 / 25640 = 32 bytes
-            if (modelIndex <= 6)
-                return 32;
-            // 25128 / 25256 = 64 bytes
-            if (modelIndex <= 8)
-                return 64;
-            // 25512 = 128 bytes
-            if (modelIndex == 9)
-                return 128;
-            // 1Mb, 2Mb, 4Mb usually 256 bytes
-            return 256;
-        }
-    }
-
-    private void updateInstructions(int protocolIndex) {
-        if (protocolIndex == 0) {
-            tvInstructions.setText(
-                    "Conexiones I2C (24Cxx):\n" +
-                            "• PIC RA0  → EEPROM SDA (Pin 5)\n" +
-                            "• PIC RA1  → EEPROM SCL (Pin 6)\n" +
-                            "• PIC GND  → EEPROM GND (Pin 4)\n" +
-                            "• PIC VCC  → EEPROM VCC (Pin 8)\n\n" +
-                            "⚠ EXIGENCIAS DE HARDWARE:\n" +
-                            "- SDA y SCL REQUIEREN resistencias Pull-Up externas hacia VCC.\n" +
-                            "- Valor ideal: 4.7kΩ (rango aceptable: 2.2kΩ a 10kΩ).\n" +
-                            "- Pines A0, A1, A2 (1, 2, 3) → Conectar a GND.\n" +
-                            "- WP (Pin 7) → Conectar a GND para permitir escritura.");
-        } else {
-            tvInstructions.setText(
-                    "Conexiones SPI (25Cxx):\n" +
-                            "• PIC RA2  → EEPROM CS   (Pin 1)\n" +
-                            "• PIC RA5  → EEPROM MISO (Pin 2)\n" +
-                            "• PIC RA6  → EEPROM MOSI (Pin 5)\n" +
-                            "• PIC RA3  → EEPROM SCK  (Pin 6)\n" +
-                            "• PIC GND  → EEPROM GND  (Pin 4)\n" +
-                            "• PIC VCC  → EEPROM VCC  (Pin 8)\n\n" +
-                            "⚠ EXIGENCIAS DE HARDWARE:\n" +
-                            "- No requiere Pull-Ups en líneas de datos.\n" +
-                            "- WP / Write Protect (Pin 3) → Conectar a VCC.\n" +
-                            "- HOLD (Pin 7) → Conectar a VCC para evitar pausas.\n" +
-                            "- Tensión: Verificar si la memoria es de 3.3V o 5V.");
-        }
     }
 
     private void connectSerial() {
@@ -244,14 +191,8 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
     }
 
     private void log(final String message) {
-        runOnUiThread(() -> {
-            if (tvLog == null || scrollLog == null)
-                return;
-            String time = new java.text.SimpleDateFormat("HH:mm:ss", java.util.Locale.getDefault())
-                    .format(new java.util.Date());
-            tvLog.append("[" + time + "] " + message + "\n");
-            scrollLog.post(() -> scrollLog.fullScroll(View.FOCUS_DOWN));
-        });
+        if (logHelper != null)
+            logHelper.log(message);
     }
 
     // =========================================================================
@@ -263,20 +204,19 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
             Toast.makeText(this, "Debe conectar el dispositivo primero", Toast.LENGTH_SHORT).show();
             return;
         }
-        isReading = true;
+        state = ProtocolState.READING;
         currentAddress = 0;
         readStream = new ByteArrayOutputStream();
 
-        int proto = spinnerProtocol.getSelectedItemPosition();
         int model = spinnerModel.getSelectedItemPosition();
-        totalSize = (proto == 0) ? i2cSizes[model] : spiSizes[model];
+        totalSize = getActiveProtocol().getTotalSize(model);
 
-        log("Iniciando lectura de " + totalSize + " bytes " + (proto == 0 ? "I2C" : "SPI") + "...");
+        log("Iniciando lectura de " + totalSize + " bytes...");
 
         progressBar.setMax(totalSize);
         progressBar.setProgress(0);
         progressBar.setVisibility(View.VISIBLE);
-        tvHexViewer.setText("Dirección | 00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F | ASCII\n" +
+        hexHelper.setText("Dirección | 00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F | ASCII\n" +
                 "------------------------------------------------------------------\nLeyendo...");
 
         updateUIState(true);
@@ -284,7 +224,7 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
     }
 
     private void requestNextReadChunk() {
-        if (!isReading)
+        if (state != ProtocolState.READING)
             return;
         if (currentAddress >= totalSize) {
             finishRead();
@@ -292,66 +232,23 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
         }
 
         int len = Math.min(READ_CHUNK_SIZE, totalSize - currentAddress);
-        int proto = spinnerProtocol.getSelectedItemPosition();
+        int modelIdx = spinnerModel.getSelectedItemPosition();
 
-        byte[] cmd;
-        if (proto == 0) { // I2C
-            // 'I' 'R' <addr_len> <chip_addr> <addr_hi> <addr_lo> <len>
-            int modelIdx = spinnerModel.getSelectedItemPosition();
-            byte addrLen = (byte) (modelIdx <= 4 ? 1 : 2); // Hasta 24C16 usa 1 byte de dir
-
-            byte chipAddr = (byte) 0xA0;
-            // Para memorias de 1 byte de dir pero > 256 bytes (24C04, 24C08, 24C16)
-            if (modelIdx >= 2 && modelIdx <= 4) {
-                byte blockBits = (byte) (((currentAddress >> 8) & 0x07) << 1);
-                chipAddr |= blockBits; // Bits A8, A9, A10 van en el Device Address
-            }
-            // Para memorias enormes (e.g. 1Mb, 2Mb) el I2C block select P0/P1
-            else if (modelIdx >= 10) {
-                // 1Mb = 131072 (A16 es bit 1 de chip), 2Mb = 262144 (A16, A17 son B1, B2)
-                byte blockBits = (byte) (((currentAddress >> 16) & 0x03) << 1);
-                chipAddr |= blockBits;
-            }
-
-            byte addrHi = (byte) ((currentAddress >> 8) & 0xFF);
-            byte addrLo = (byte) (currentAddress & 0xFF);
-
-            cmd = new byte[] { 'I', 'R', addrLen, chipAddr, addrHi, addrLo, (byte) len };
-        } else { // SPI
-            // 'P' 'R' <addr_len> <opcode> <addr_hi> <addr_mid> <addr_lo> <len>
-            int modelIdx = spinnerModel.getSelectedItemPosition();
-            byte addrLen;
-            if (modelIdx < 3)
-                addrLen = 1; // 128, 256, 512 bytes (esp 25010, 25020, 25040)
-            else if (modelIdx >= 10)
-                addrLen = 3; // >= 1Mb (131072 bytes) = 3 bytes address
-            else
-                addrLen = 2;
-
-            byte spiOpcode = (byte) 0x03; // READ array
-            if (modelIdx == 2) { // 25040 requiere el bit A8 embebido en el bit 3 del opcode
-                spiOpcode |= ((currentAddress >> 8) & 0x01) << 3;
-            }
-
-            byte addrHi = (byte) ((currentAddress >> 16) & 0xFF);
-            byte addrMid = (byte) ((currentAddress >> 8) & 0xFF);
-            byte addrLo = (byte) (currentAddress & 0xFF);
-            cmd = new byte[] { 'P', 'R', addrLen, spiOpcode, addrHi, addrMid, addrLo, (byte) len };
-        }
+        byte[] cmd = getActiveProtocol().buildReadCommand(currentAddress, len, modelIdx);
 
         serialManager.sendData(cmd);
         resetTimeout();
     }
 
     private void finishRead() {
-        isReading = false;
+        state = ProtocolState.IDLE;
         eepromBuffer = readStream.toByteArray();
         progressBar.setVisibility(View.GONE);
         taskHandler.removeCallbacks(timeoutRunnable);
         log("Lectura completada exitosamente.");
         Toast.makeText(this, "Lectura completada", Toast.LENGTH_SHORT).show();
         updateUIState(true);
-        renderHexViewer(eepromBuffer);
+        hexHelper.renderNow(eepromBuffer);
     }
 
     // =========================================================================
@@ -380,9 +277,8 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
             byte[] rawFileData = buffer.toByteArray();
             is.close();
 
-            int proto = spinnerProtocol.getSelectedItemPosition();
             int model = spinnerModel.getSelectedItemPosition();
-            totalSize = (proto == 0) ? i2cSizes[model] : spiSizes[model];
+            totalSize = getActiveProtocol().getTotalSize(model);
 
             String fileName = "Archivo";
             android.database.Cursor cursor = getContentResolver().query(uri, null, null, null, null);
@@ -399,9 +295,9 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
             if (fileName.toLowerCase().endsWith(".hex") || (rawFileData.length > 0 && rawFileData[0] == ':')) {
                 log("Detectado formato Intel Hex. Parseando...");
                 try {
-                    writeDataBuffer = parseIntelHex(rawFileData, totalSize);
+                    writeDataBuffer = IntelHexFormat.parseIntelHex(rawFileData, totalSize);
                     log("Intel Hex procesado. " + writeDataBuffer.length + " bytes resultantes.");
-                } catch (Exception ex) {
+                } catch (HexParseException ex) {
                     log("Error parseando Intel Hex: " + ex.getMessage());
                     log("Tratando contenido como Binario Puro...");
                     writeDataBuffer = rawFileData;
@@ -419,12 +315,12 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
             }
 
             log("Iniciando escritura de " + writeDataBuffer.length + " bytes en memoria...");
-            isWriting = true;
+            state = ProtocolState.WRITING;
             currentAddress = 0;
             progressBar.setMax(writeDataBuffer.length);
             progressBar.setProgress(0);
             progressBar.setVisibility(View.VISIBLE);
-            tvHexViewer.setText("Escribiendo...");
+            hexHelper.setText("Escribiendo...");
 
             updateUIState(true);
             sendNextWriteChunk();
@@ -436,87 +332,40 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
     }
 
     private void sendNextWriteChunk() {
-        if (!isWriting)
+        if (state != ProtocolState.WRITING)
             return;
         if (currentAddress >= writeDataBuffer.length) {
             finishWrite();
             return;
         }
 
-        int proto = spinnerProtocol.getSelectedItemPosition();
         int model = spinnerModel.getSelectedItemPosition();
-        int pageSize = getPageSize(proto, model);
+        int pageSize = getActiveProtocol().getPageSize(model);
 
-        // Calcular los bytes restantes hasta el limite de la pagina fisica
         int bytesToNextBoundary = pageSize - (currentAddress % pageSize);
-
-        // El chunk no puede exceder el limite de la pagina ni el limite seguro de RAM
-        // (MAX_WRITE_CHUNK_SIZE)
         int chunkLimit = Math.min(bytesToNextBoundary, MAX_WRITE_CHUNK_SIZE);
         int len = Math.min(chunkLimit, writeDataBuffer.length - currentAddress);
 
-        ByteArrayOutputStream cmdStream = new ByteArrayOutputStream();
-
         try {
-            if (proto == 0) { // I2C
-                // 'I' 'W' <addr_len> <chip_addr> <addr_hi> <addr_lo> <len> <data...>
-                int modelIdx = spinnerModel.getSelectedItemPosition();
-                byte addrLen = (byte) (modelIdx <= 4 ? 1 : 2); // Hasta 24C16 usa 1 byte de dir
-
-                byte chipAddr = (byte) 0xA0;
-                // Para memorias de 1 byte de dir pero > 256 bytes (24C04, 24C08, 24C16)
-                if (modelIdx >= 2 && modelIdx <= 4) {
-                    byte blockBits = (byte) (((currentAddress >> 8) & 0x07) << 1);
-                    chipAddr |= blockBits; // Bits A8, A9, A10 van en el Device Address
-                }
-                // Para memorias enormes (e.g. 1Mb, 2Mb) el I2C block select P0/P1
-                else if (modelIdx >= 10) {
-                    byte blockBits = (byte) (((currentAddress >> 16) & 0x03) << 1);
-                    chipAddr |= blockBits;
-                }
-
-                byte addrHi = (byte) ((currentAddress >> 8) & 0xFF);
-                byte addrLo = (byte) (currentAddress & 0xFF);
-
-                cmdStream.write(new byte[] { 'I', 'W', addrLen, chipAddr, addrHi, addrLo, (byte) len });
-            } else { // SPI
-                // 'P' 'W' <addr_len> <opcode> <addr_hi> <addr_mid> <addr_lo> <len> <data...>
-                int modelIdx = spinnerModel.getSelectedItemPosition();
-                byte addrLen;
-                if (modelIdx < 3)
-                    addrLen = 1; // 128, 256, 512 bytes
-                else if (modelIdx >= 10)
-                    addrLen = 3; // >= 1Mb
-                else
-                    addrLen = 2;
-
-                byte spiOpcode = (byte) 0x02; // WRITE array
-                if (modelIdx == 2) { // 25040 requiere el bit A8 embebido en el bit 3 del opcode
-                    spiOpcode |= ((currentAddress >> 8) & 0x01) << 3;
-                }
-
-                byte addrHi = (byte) ((currentAddress >> 16) & 0xFF);
-                byte addrMid = (byte) ((currentAddress >> 8) & 0xFF);
-                byte addrLo = (byte) (currentAddress & 0xFF);
-                cmdStream.write(new byte[] { 'P', 'W', addrLen, spiOpcode, addrHi, addrMid, addrLo, (byte) len });
-            }
-            // Adjuntar datos
+            ByteArrayOutputStream cmdStream = new ByteArrayOutputStream();
+            byte[] baseCmd = getActiveProtocol().buildWriteCommandBase(currentAddress, len, model);
+            cmdStream.write(baseCmd);
             cmdStream.write(writeDataBuffer, currentAddress, len);
+
+            serialManager.sendData(cmdStream.toByteArray());
+            resetTimeout();
         } catch (Exception e) {
             e.printStackTrace();
         }
-
-        serialManager.sendData(cmdStream.toByteArray());
-        resetTimeout();
     }
 
     private void finishWrite() {
-        isWriting = false;
+        state = ProtocolState.IDLE;
         progressBar.setVisibility(View.GONE);
         taskHandler.removeCallbacks(timeoutRunnable);
         log("Escritura completada exitosamente.");
         Toast.makeText(this, "Escritura completada", Toast.LENGTH_SHORT).show();
-        tvHexViewer.setText("Escritura finalizada con éxito.");
+        hexHelper.setText("Escritura finalizada con éxito.");
         updateUIState(true);
     }
 
@@ -524,39 +373,16 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
     // GUARDADO (EXPORT)
     // =========================================================================
 
-    @SuppressWarnings("deprecation")
     private void saveBuffer() {
-        if (eepromBuffer == null || eepromBuffer.length == 0) {
-            log("Error: No hay datos en el buffer para guardar.");
-            Toast.makeText(this, "No hay datos leídos para guardar.", Toast.LENGTH_SHORT).show();
-            return;
-        }
         try {
-            File env = android.os.Environment
-                    .getExternalStoragePublicDirectory(android.os.Environment.DIRECTORY_DOWNLOADS);
-            File romDir = new File(env, "rom");
-            if (!romDir.exists())
-                romDir.mkdirs();
-
-            // Guardar BIN
-            String fileNameBin = "eeprom_dump_" + System.currentTimeMillis() + ".bin";
-            File fileBin = new File(romDir, fileNameBin);
-            FileOutputStream fosBin = new FileOutputStream(fileBin);
-            fosBin.write(eepromBuffer);
-            fosBin.close();
-            log("Guardado BIN: " + fileBin.getName());
-
-            // Guardar HEX
-            String fileNameHex = "eeprom_dump_" + System.currentTimeMillis() + ".hex";
-            File fileHex = new File(romDir, fileNameHex);
-            FileOutputStream fosHex = new FileOutputStream(fileHex);
-            fosHex.write(generateIntelHex(eepromBuffer).getBytes(StandardCharsets.UTF_8));
-            fosHex.close();
-            log("Guardado HEX: " + fileHex.getName());
-
+            File romDir = FileManager.saveMemoryDump(eepromBuffer);
+            log("Guardado BIN/HEX en " + romDir.getAbsolutePath());
             Toast.makeText(this, "Archivos guardados en Descargas/rom/", Toast.LENGTH_LONG).show();
-        } catch (Exception e) {
-            log("Error guardando archivos: " + e.getMessage());
+        } catch (IllegalArgumentException e) {
+            log("Error: " + e.getMessage());
+            Toast.makeText(this, "No hay datos leídos para guardar.", Toast.LENGTH_SHORT).show();
+        } catch (java.io.IOException e) {
+            log("Error I/O guardando archivos: " + e.getMessage());
             Toast.makeText(this, "Error guardando: " + e.getMessage(), Toast.LENGTH_LONG).show();
         }
     }
@@ -677,48 +503,17 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
         taskHandler.postDelayed(timeoutRunnable, 5000); // 5 segundos timeout
     }
 
-    private void renderHexViewer(byte[] data) {
-        StringBuilder sb = new StringBuilder();
-        sb.append("Dirección | 00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F | ASCII\n");
-        sb.append("------------------------------------------------------------------\n");
-        for (int i = 0; i < data.length; i += 16) {
-            sb.append(String.format("%08X  | ", i));
-
-            // Hex bytes
-            for (int j = 0; j < 16; j++) {
-                if (i + j < data.length) {
-                    sb.append(String.format("%02X ", data[i + j]));
-                } else {
-                    sb.append("   ");
-                }
-            }
-            sb.append("| ");
-
-            // ASCII chars
-            for (int j = 0; j < 16; j++) {
-                if (i + j < data.length) {
-                    char c = (char) data[i + j];
-                    if (c >= 32 && c <= 126) {
-                        sb.append(c);
-                    } else {
-                        sb.append('.');
-                    }
-                }
-            }
-            sb.append("\n");
-        }
-        tvHexViewer.setText(sb.toString());
-    }
-
     private void updateUIState(final boolean connected) {
         runOnUiThread(() -> {
             btnConnect.setEnabled(!connected);
             btnDisconnect.setEnabled(connected);
             spinnerBaudRate.setEnabled(!connected);
 
-            btnRead.setEnabled(connected && !isReading && !isWriting);
-            btnWrite.setEnabled(connected && !isReading && !isWriting);
-            btnSave.setEnabled(!isReading && !isWriting && eepromBuffer != null);
+            boolean isBusy = state != ProtocolState.IDLE;
+
+            btnRead.setEnabled(connected && !isBusy);
+            btnWrite.setEnabled(connected && !isBusy);
+            btnSave.setEnabled(!isBusy && eepromBuffer != null);
 
             if (connected) {
                 statusDot.setBackgroundColor(Color.parseColor("#3FB950"));
@@ -732,7 +527,7 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
                 tvStatusLabel.setTextColor(Color.parseColor("#F85149"));
                 if (layoutStatus != null)
                     layoutStatus.setBackgroundColor(Color.parseColor("#1A0A0A"));
-                isReading = isWriting = false;
+                state = ProtocolState.IDLE;
                 taskHandler.removeCallbacks(timeoutRunnable);
                 progressBar.setVisibility(View.GONE);
             }
@@ -774,7 +569,7 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
 
     @Override
     public void onSerialRead(byte[] data) {
-        if (isReading) {
+        if (state == ProtocolState.READING) {
             try {
                 readStream.write(data);
                 int totalReadSoFar = readStream.size();
@@ -782,12 +577,8 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
 
                 // Mostrar progreso en vivo en el visor Hex de forma controlada (Throttling)
                 // EVITA ANR!
-                long now = System.currentTimeMillis();
-                if (now - lastUiUpdateTime > 250) { // Actualiza la UI unicamente 4 veces por segundo maximo
-                    lastUiUpdateTime = now;
-                    byte[] currentBuffer = readStream.toByteArray(); // Copia segura
-                    runOnUiThread(() -> renderHexViewer(currentBuffer));
-                }
+                byte[] currentBuffer = readStream.toByteArray();
+                hexHelper.renderThrottled(currentBuffer);
 
                 if (totalReadSoFar >= currentAddress + expectedForThisChunk) {
                     currentAddress += expectedForThisChunk;
@@ -799,14 +590,13 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
             } catch (Exception e) {
                 e.printStackTrace();
             }
-        } else if (isWriting) {
+        } else if (state == ProtocolState.WRITING) {
             // El PIC debería responder con una 'K' (Acknowledge Ok) cuando termina de
             // escribir el chunk de datos
             for (byte b : data) {
                 if (b == 'K') {
-                    int proto = spinnerProtocol.getSelectedItemPosition();
                     int model = spinnerModel.getSelectedItemPosition();
-                    int pageSize = getPageSize(proto, model);
+                    int pageSize = getActiveProtocol().getPageSize(model);
                     int bytesToNextBoundary = pageSize - (currentAddress % pageSize);
                     int chunkLimit = Math.min(bytesToNextBoundary, MAX_WRITE_CHUNK_SIZE);
                     int expectedForThisChunk = Math.min(chunkLimit, writeDataBuffer.length - currentAddress);
