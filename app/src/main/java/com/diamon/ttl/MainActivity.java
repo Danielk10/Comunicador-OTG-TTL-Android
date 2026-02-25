@@ -278,15 +278,21 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
         if (proto == 0) { // I2C
             // 'I' 'R' <addr_len> <chip_addr> <addr_hi> <addr_lo> <len>
             int modelIdx = spinnerModel.getSelectedItemPosition();
-            byte addrLen = (byte) (modelIdx >= 4 ? 2 : 1); // 24c16 y menor usan 1 byte para dirección
+            byte addrLen = (byte) (modelIdx <= 4 ? 1 : 2); // Hasta 24C16 usa 1 byte de dir
+
             byte chipAddr = (byte) 0xA0;
-            if (addrLen == 1) {
-                // Las EEPROMS I2C pequeñas unen la parte alta de la address con el device pin
-                chipAddr |= ((currentAddress >> 8) & 0x07) << 1;
-            } else {
-                // I2C > 64KB (ej. 24C1024) usan pines P0/P1 para el bloque
-                chipAddr |= ((currentAddress >> 16) & 0x03) << 1;
+            // Para memorias de 1 byte de dir pero > 256 bytes (24C04, 24C08, 24C16)
+            if (modelIdx >= 2 && modelIdx <= 4) {
+                byte blockBits = (byte) (((currentAddress >> 8) & 0x07) << 1);
+                chipAddr |= blockBits; // Bits A8, A9, A10 van en el Device Address
             }
+            // Para memorias enormes (e.g. 1Mb, 2Mb) el I2C block select P0/P1
+            else if (modelIdx >= 10) {
+                // 1Mb = 131072 (A16 es bit 1 de chip), 2Mb = 262144 (A16, A17 son B1, B2)
+                byte blockBits = (byte) (((currentAddress >> 16) & 0x03) << 1);
+                chipAddr |= blockBits;
+            }
+
             byte addrHi = (byte) ((currentAddress >> 8) & 0xFF);
             byte addrLo = (byte) (currentAddress & 0xFF);
 
@@ -435,13 +441,20 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
             if (proto == 0) { // I2C
                 // 'I' 'W' <addr_len> <chip_addr> <addr_hi> <addr_lo> <len> <data...>
                 int modelIdx = spinnerModel.getSelectedItemPosition();
-                byte addrLen = (byte) (modelIdx >= 4 ? 2 : 1);
+                byte addrLen = (byte) (modelIdx <= 4 ? 1 : 2); // Hasta 24C16 usa 1 byte de dir
+
                 byte chipAddr = (byte) 0xA0;
-                if (addrLen == 1) {
-                    chipAddr |= ((currentAddress >> 8) & 0x07) << 1;
-                } else {
-                    chipAddr |= ((currentAddress >> 16) & 0x03) << 1;
+                // Para memorias de 1 byte de dir pero > 256 bytes (24C04, 24C08, 24C16)
+                if (modelIdx >= 2 && modelIdx <= 4) {
+                    byte blockBits = (byte) (((currentAddress >> 8) & 0x07) << 1);
+                    chipAddr |= blockBits; // Bits A8, A9, A10 van en el Device Address
                 }
+                // Para memorias enormes (e.g. 1Mb, 2Mb) el I2C block select P0/P1
+                else if (modelIdx >= 10) {
+                    byte blockBits = (byte) (((currentAddress >> 16) & 0x03) << 1);
+                    chipAddr |= blockBits;
+                }
+
                 byte addrHi = (byte) ((currentAddress >> 8) & 0xFF);
                 byte addrLo = (byte) (currentAddress & 0xFF);
 
