@@ -204,10 +204,30 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
     private void updateInstructions(int protocolIndex) {
         if (protocolIndex == 0) {
             tvInstructions.setText(
-                    "Conexiones I2C (24Cxx):\n- PIC RA0 -> EEPROM SDA\n- PIC RA1 -> EEPROM SCL\n- PIC GND/VCC -> EEPROM GND/VCC\n*(Se requieren resistencias pull-up externas en SDA y SCL)*");
+                    "Conexiones I2C (24Cxx):\n" +
+                            "• PIC RA0  → EEPROM SDA (Pin 5)\n" +
+                            "• PIC RA1  → EEPROM SCL (Pin 6)\n" +
+                            "• PIC GND  → EEPROM GND (Pin 4)\n" +
+                            "• PIC VCC  → EEPROM VCC (Pin 8)\n\n" +
+                            "⚠ EXIGENCIAS DE HARDWARE:\n" +
+                            "- SDA y SCL REQUIEREN resistencias Pull-Up externas hacia VCC.\n" +
+                            "- Valor ideal: 4.7kΩ (rango aceptable: 2.2kΩ a 10kΩ).\n" +
+                            "- Pines A0, A1, A2 (1, 2, 3) → Conectar a GND.\n" +
+                            "- WP (Pin 7) → Conectar a GND para permitir escritura.");
         } else {
             tvInstructions.setText(
-                    "Conexiones SPI (25Cxx):\n- PIC RA2 -> EEPROM CS\n- PIC RA3 -> EEPROM SCK\n- PIC RA5 -> EEPROM MISO (DO)\n- PIC RA6 -> EEPROM MOSI (DI)\n- PIC GND/VCC -> EEPROM GND/VCC");
+                    "Conexiones SPI (25Cxx):\n" +
+                            "• PIC RA2  → EEPROM CS   (Pin 1)\n" +
+                            "• PIC RA5  → EEPROM MISO (Pin 2)\n" +
+                            "• PIC RA6  → EEPROM MOSI (Pin 5)\n" +
+                            "• PIC RA3  → EEPROM SCK  (Pin 6)\n" +
+                            "• PIC GND  → EEPROM GND  (Pin 4)\n" +
+                            "• PIC VCC  → EEPROM VCC  (Pin 8)\n\n" +
+                            "⚠ EXIGENCIAS DE HARDWARE:\n" +
+                            "- No requiere Pull-Ups en líneas de datos.\n" +
+                            "- WP / Write Protect (Pin 3) → Conectar a VCC.\n" +
+                            "- HOLD (Pin 7) → Conectar a VCC para evitar pausas.\n" +
+                            "- Tensión: Verificar si la memoria es de 3.3V o 5V.");
         }
     }
 
