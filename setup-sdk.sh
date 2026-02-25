@@ -6,6 +6,7 @@ SDK_ROOT="${ANDROID_SDK_ROOT:-/opt/android-sdk}"
 CMDLINE_TOOLS_VERSION="13114758"
 CMDLINE_TOOLS_ZIP="commandlinetools-linux-${CMDLINE_TOOLS_VERSION}_latest.zip"
 CMDLINE_TOOLS_URL="https://dl.google.com/android/repository/${CMDLINE_TOOLS_ZIP}"
+RUN_BUILD="${1:-}"
 
 mkdir -p "${SDK_ROOT}/cmdline-tools"
 
@@ -40,3 +41,8 @@ chmod +x "${PROJECT_ROOT}/gradlew"
 echo "Android SDK/NDK configurado en ${ANDROID_SDK_ROOT}"
 echo "local.properties generado en ${PROJECT_ROOT}/local.properties"
 echo "Gradle wrapper habilitado: ${PROJECT_ROOT}/gradlew"
+
+if [[ "${RUN_BUILD}" == "--build" ]]; then
+  echo "Compilando proyecto (assembleDebug)..."
+  (cd "${PROJECT_ROOT}" && ./gradlew assembleDebug)
+fi
