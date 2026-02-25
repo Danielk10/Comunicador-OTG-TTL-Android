@@ -166,19 +166,38 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
 
     private int getPageSize(int protocolIndex, int modelIndex) {
         if (protocolIndex == 0) { // I2C
+            // 24C01 / 24C02 = 8 bytes
             if (modelIndex <= 1)
-                return 8; // 24c01, 24c02
+                return 8;
+            // 24C04 / 24C08 / 24C16 = 16 bytes
             if (modelIndex <= 4)
-                return 16; // 24c04, 08, 16
+                return 16;
+            // 24C32 / 24C64 = 32 bytes
             if (modelIndex <= 6)
-                return 32; // 24c32, 64
-            return 64; // 24c128, 256, 512
+                return 32;
+            // 24C128 / 24C256 / 24C512 = 64 bytes
+            if (modelIndex <= 9)
+                return 64;
+            // 1Mb, 2Mb = 256 bytes
+            return 256;
         } else { // SPI
-            if (modelIndex <= 3)
-                return 16; // 25c010-080
+            // 25010 / 25020 = 8 bytes (limite físico real mas bajo)
+            if (modelIndex <= 1)
+                return 8;
+            // 25040 / 25080 / 25160 = 16 bytes
+            if (modelIndex <= 4)
+                return 16;
+            // 25320 / 25640 = 32 bytes
             if (modelIndex <= 6)
-                return 32; // 25c160-640
-            return 64; // 25c128-512
+                return 32;
+            // 25128 / 25256 = 64 bytes
+            if (modelIndex <= 8)
+                return 64;
+            // 25512 = 128 bytes
+            if (modelIndex == 9)
+                return 128;
+            // 1Mb, 2Mb, 4Mb usually 256 bytes
+            return 256;
         }
     }
 
@@ -273,13 +292,25 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
 
             cmd = new byte[] { 'I', 'R', addrLen, chipAddr, addrHi, addrLo, (byte) len };
         } else { // SPI
-            // 'P' 'R' <addr_len> <addr_hi> <addr_mid> <addr_lo> <len>
+            // 'P' 'R' <addr_len> <opcode> <addr_hi> <addr_mid> <addr_lo> <len>
             int modelIdx = spinnerModel.getSelectedItemPosition();
-            byte addrLen = (byte) (modelIdx >= 10 ? 3 : 2); // >= 1Mb (131072 bytes) = 3 bytes address
+            byte addrLen;
+            if (modelIdx < 3)
+                addrLen = 1; // 128, 256, 512 bytes (esp 25010, 25020, 25040)
+            else if (modelIdx >= 10)
+                addrLen = 3; // >= 1Mb (131072 bytes) = 3 bytes address
+            else
+                addrLen = 2;
+
+            byte spiOpcode = (byte) 0x03; // READ array
+            if (modelIdx == 2) { // 25040 requiere el bit A8 embebido en el bit 3 del opcode
+                spiOpcode |= ((currentAddress >> 8) & 0x01) << 3;
+            }
+
             byte addrHi = (byte) ((currentAddress >> 16) & 0xFF);
             byte addrMid = (byte) ((currentAddress >> 8) & 0xFF);
             byte addrLo = (byte) (currentAddress & 0xFF);
-            cmd = new byte[] { 'P', 'R', addrLen, addrHi, addrMid, addrLo, (byte) len };
+            cmd = new byte[] { 'P', 'R', addrLen, spiOpcode, addrHi, addrMid, addrLo, (byte) len };
         }
 
         serialManager.sendData(cmd);
@@ -416,13 +447,25 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
 
                 cmdStream.write(new byte[] { 'I', 'W', addrLen, chipAddr, addrHi, addrLo, (byte) len });
             } else { // SPI
-                // 'P' 'W' <addr_len> <addr_hi> <addr_mid> <addr_lo> <len> <data...>
+                // 'P' 'W' <addr_len> <opcode> <addr_hi> <addr_mid> <addr_lo> <len> <data...>
                 int modelIdx = spinnerModel.getSelectedItemPosition();
-                byte addrLen = (byte) (modelIdx >= 10 ? 3 : 2); // >= 1Mb (131072 bytes) = 3 bytes address
+                byte addrLen;
+                if (modelIdx < 3)
+                    addrLen = 1; // 128, 256, 512 bytes
+                else if (modelIdx >= 10)
+                    addrLen = 3; // >= 1Mb
+                else
+                    addrLen = 2;
+
+                byte spiOpcode = (byte) 0x02; // WRITE array
+                if (modelIdx == 2) { // 25040 requiere el bit A8 embebido en el bit 3 del opcode
+                    spiOpcode |= ((currentAddress >> 8) & 0x01) << 3;
+                }
+
                 byte addrHi = (byte) ((currentAddress >> 16) & 0xFF);
                 byte addrMid = (byte) ((currentAddress >> 8) & 0xFF);
                 byte addrLo = (byte) (currentAddress & 0xFF);
-                cmdStream.write(new byte[] { 'P', 'W', addrLen, addrHi, addrMid, addrLo, (byte) len });
+                cmdStream.write(new byte[] { 'P', 'W', addrLen, spiOpcode, addrHi, addrMid, addrLo, (byte) len });
             }
             // Adjuntar datos
             cmdStream.write(writeDataBuffer, currentAddress, len);

@@ -224,13 +224,12 @@ void main(void) {
 
                 // =============================================================
                 // Comandos SPI EEPROM (25Cxx)
-                // Formato: 'P' 'R'/'W' <addr_len> <addr_hi> <addr_mid> <addr_lo> <len/data...>
-                // (Usamos 'P' porque 'S' ya se usa para Status)
-                // addr_len = 2 (<= 64KB), 3 (> 64KB)
+                // Formato: 'P' 'R'/'W' <addr_len> <opcode> <addr_hi> <addr_mid> <addr_lo> <len/data...>
                 // =============================================================
                 case 'P': {
                     char op = UART_Read();
                     uint8_t addr_len = UART_Read();
+                    uint8_t spi_opcode = UART_Read();
                     addr_hi = UART_Read();
                     addr_md = UART_Read();
                     addr_lo = UART_Read();
@@ -238,9 +237,9 @@ void main(void) {
                     if(op == 'R') {
                         len = UART_Read();
                         SPI_CS_PIN = 0;
-                        SPI_Write(0x03); // Comando Leer (Read Data)
+                        SPI_Write(spi_opcode); // Comando Leer (Read Data)
                         if(addr_len == 3) SPI_Write(addr_hi);
-                        SPI_Write(addr_md);
+                        if(addr_len >= 2) SPI_Write(addr_md);
                         SPI_Write(addr_lo);
                         for(i = 0; i < len; i++) {
                             data = SPI_Read();
@@ -253,26 +252,30 @@ void main(void) {
                         SPI_CS_PIN = 0;
                         SPI_Write(0x06); // WREN
                         SPI_CS_PIN = 1;
-                        
+
                         // Escribir datos (Page Program)
                         SPI_CS_PIN = 0;
-                        SPI_Write(0x02); // Comando Escibir (Page Program)
+                        SPI_Write(spi_opcode); // Comando Escibir (Page Program)
                         if(addr_len == 3) SPI_Write(addr_hi);
-                        SPI_Write(addr_md);
+                        if(addr_len >= 2) SPI_Write(addr_md);
                         SPI_Write(addr_lo);
                         for(i = 0; i < len; i++) {
                             data = UART_Read();
                             SPI_Write(data);
                         }
                         SPI_CS_PIN = 1;
-                        
-                        // Esperar estado Ready (wip = 0)
+
+                        // Esperar estado Ready (wip = 0) con Timeout para evitar bloqueos
+                        // si el chip no esta conectado (MISO flotando = 0xFF)
                         data = 0x01;
-                        while(data & 0x01) {
+                        uint16_t timeout = 0;
+                        while((data & 0x01) && (timeout < 5000)) {
                             SPI_CS_PIN = 0;
                             SPI_Write(0x05); // Read Status Register
                             data = SPI_Read();
                             SPI_CS_PIN = 1;
+                            Delay_ms(1);
+                            timeout++;
                         }
                         UART_Write('K'); // Acknowledge OK
                     }
