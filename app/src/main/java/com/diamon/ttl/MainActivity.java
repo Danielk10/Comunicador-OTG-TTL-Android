@@ -51,7 +51,10 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
     private int currentAddress = 0;
     private int totalSize = 0;
     private ByteArrayOutputStream readStream;
-    private final int CHUNK_SIZE = 16; // 16 bytes per chunk to be safe with page sizes
+    private final int MAX_WRITE_CHUNK_SIZE = 64;
+    private final int READ_CHUNK_SIZE = 64;
+    private long lastUiUpdateTime = 0;
+
     private Handler taskHandler = new Handler(Looper.getMainLooper());
     private Runnable timeoutRunnable;
 
@@ -160,6 +163,24 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
         spinnerModel.setAdapter(modelAdapter);
     }
 
+    private int getPageSize(int protocolIndex, int modelIndex) {
+        if (protocolIndex == 0) { // I2C
+            if (modelIndex <= 1)
+                return 8; // 24c01, 24c02
+            if (modelIndex <= 4)
+                return 16; // 24c04, 08, 16
+            if (modelIndex <= 6)
+                return 32; // 24c32, 64
+            return 64; // 24c128, 256, 512
+        } else { // SPI
+            if (modelIndex <= 3)
+                return 16; // 25c010-080
+            if (modelIndex <= 6)
+                return 32; // 25c160-640
+            return 64; // 25c128-512
+        }
+    }
+
     private void updateInstructions(int protocolIndex) {
         if (protocolIndex == 0) {
             tvInstructions.setText(
@@ -230,7 +251,7 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
             return;
         }
 
-        int len = Math.min(CHUNK_SIZE, totalSize - currentAddress);
+        int len = Math.min(READ_CHUNK_SIZE, totalSize - currentAddress);
         int proto = spinnerProtocol.getSelectedItemPosition();
 
         byte[] cmd;
@@ -358,8 +379,17 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
             return;
         }
 
-        int len = Math.min(CHUNK_SIZE, writeDataBuffer.length - currentAddress);
         int proto = spinnerProtocol.getSelectedItemPosition();
+        int model = spinnerModel.getSelectedItemPosition();
+        int pageSize = getPageSize(proto, model);
+
+        // Calcular los bytes restantes hasta el limite de la pagina fisica
+        int bytesToNextBoundary = pageSize - (currentAddress % pageSize);
+
+        // El chunk no puede exceder el limite de la pagina ni el limite seguro de RAM
+        // (MAX_WRITE_CHUNK_SIZE)
+        int chunkLimit = Math.min(bytesToNextBoundary, MAX_WRITE_CHUNK_SIZE);
+        int len = Math.min(chunkLimit, writeDataBuffer.length - currentAddress);
 
         ByteArrayOutputStream cmdStream = new ByteArrayOutputStream();
 
@@ -660,13 +690,16 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
             try {
                 readStream.write(data);
                 int totalReadSoFar = readStream.size();
-                int expectedForThisChunk = Math.min(CHUNK_SIZE, totalSize - currentAddress);
+                int expectedForThisChunk = Math.min(READ_CHUNK_SIZE, totalSize - currentAddress);
 
-                // Mostrar progreso en vivo en el visor Hex
-                runOnUiThread(() -> {
-                    byte[] currentBuffer = readStream.toByteArray();
-                    renderHexViewer(currentBuffer);
-                });
+                // Mostrar progreso en vivo en el visor Hex de forma controlada (Throttling)
+                // EVITA ANR!
+                long now = System.currentTimeMillis();
+                if (now - lastUiUpdateTime > 250) { // Actualiza la UI unicamente 4 veces por segundo maximo
+                    lastUiUpdateTime = now;
+                    byte[] currentBuffer = readStream.toByteArray(); // Copia segura
+                    runOnUiThread(() -> renderHexViewer(currentBuffer));
+                }
 
                 if (totalReadSoFar >= currentAddress + expectedForThisChunk) {
                     currentAddress += expectedForThisChunk;
@@ -683,7 +716,13 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
             // escribir el chunk de datos
             for (byte b : data) {
                 if (b == 'K') {
-                    int expectedForThisChunk = Math.min(CHUNK_SIZE, writeDataBuffer.length - currentAddress);
+                    int proto = spinnerProtocol.getSelectedItemPosition();
+                    int model = spinnerModel.getSelectedItemPosition();
+                    int pageSize = getPageSize(proto, model);
+                    int bytesToNextBoundary = pageSize - (currentAddress % pageSize);
+                    int chunkLimit = Math.min(bytesToNextBoundary, MAX_WRITE_CHUNK_SIZE);
+                    int expectedForThisChunk = Math.min(chunkLimit, writeDataBuffer.length - currentAddress);
+
                     currentAddress += expectedForThisChunk;
                     runOnUiThread(() -> progressBar.setProgress(currentAddress));
                     sendNextWriteChunk();
