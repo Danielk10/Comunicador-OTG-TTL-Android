@@ -4,7 +4,6 @@ trigger:
 pool:
   vmImage: 'ubuntu-latest'
 
-# 1. Configuraci車n de Variables
 variables:
 - group: 'GH_TOKEN' # Nombre de tu grupo en la Library
 - name: repoUrl
@@ -13,9 +12,9 @@ variables:
 steps:
 - checkout: self
   persistCredentials: true
-  fetchDepth: 0 # Permite obtener el historial para realizar el push
+  fetchDepth: 0 # IMPORTANTE: Descarga todo el historial para evitar errores de Git
 
-# 2. Compilar APK y AAB en modo Debug (sin firmar)
+# 1. Compilar APK y AAB en modo Debug
 - task: Gradle@3
   displayName: 'Build APK & AAB Debug'
   inputs:
@@ -23,9 +22,9 @@ steps:
     tasks: 'assembleDebug bundleDebug'
     publishJUnitResults: false
     javaHomeOption: 'JDKVersion'
-    jdkVersionOption: '1.21' # Recomendado para Gradle 9.3.x
+    jdkVersionOption: '1.21'
 
-# 3. Colectar archivos generados (APK y AAB)
+# 2. Colectar archivos generados
 - task: CopyFiles@2
   displayName: 'Colectar archivos para Azure'
   inputs:
@@ -35,7 +34,7 @@ steps:
     TargetFolder: '$(Build.ArtifactStagingDirectory)'
     flattenFolders: true
 
-# 4. Publicar en la secci車n Artifacts de Azure DevOps
+# 3. Guardar archivos en Azure (Artifacts)
 - task: PublishBuildArtifacts@1
   displayName: 'Publicar Artefactos en Azure'
   inputs:
@@ -43,24 +42,27 @@ steps:
     ArtifactName: 'Android_Debug_Builds'
     publishLocation: 'Container'
 
-# 5. Sincronizar con GitHub (Danielk10)
+# 4. Sincronizar con GitHub (Danielk10)
 - script: |
-    # Configurar identidad del usuario
+    # Configuraci?n de identidad
     git config --global user.email "danielpdiamon@gmail.com"
     git config --global user.name "Danielk10"
     
-    # Actualizar remoto con el token para autenticaci車n
-    # Las comillas evitan errores de interpretaci車n de caracteres especiales
+    # Reconfigurar remoto con token (Usar comillas dobles es m?s seguro)
     git remote set-url origin "https://$(GH_TOKEN)@$(repoUrl)"
     
-    # Crear un log de la compilaci車n para el commit
-    echo "Last build: $(Build.BuildId) - Date: $(Build.QueuedAt)" > build_info.txt
+    # SOLUCI?N AL ERROR 'REJECTED': Traer cambios remotos antes de subir
+    # Esto une tus cambios manuales con los del pipeline
+    git pull origin main --rebase
+    
+    # SOLUCI?N AL ERROR 'COMMAND NOT FOUND': Usar echo correctamente
+    echo "Build ID: $(Build.BuildId) - Hecho el: $(Build.QueuedAt)" > build_info.txt
     
     git add .
     
-    # [skip ci] es VITAL para que Azure no entre en bucle infinito
+    # El [skip ci] evita que Azure se vuelva a disparar a s? mismo
     git commit -m "Automated update build $(Build.BuildId) [skip ci]"
     git push origin HEAD:main
   displayName: 'Enviar cambios a GitHub'
   env:
-    GH_TOKEN: $(GH_TOKEN) # Mapeo de la variable del grupo GH_TOKEN
+    GH_TOKEN: $(GH_TOKEN)
