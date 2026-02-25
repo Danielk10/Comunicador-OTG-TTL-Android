@@ -6,26 +6,26 @@ pool:
 
 # 1. Configuración de Variables (Vínculo con el Grupo GH_TOKEN)
 variables:
-- group: 'GH_TOKEN' # Nombre de tu grupo en la Library
+- group: 'GH_TOKEN' # Nombre de tu grupo en la Library de Azure
 - name: repoUrl
   value: 'github.com/Danielk10/Comunicador-OTG-TTL-Android.git'
 
 steps:
 - checkout: self
   persistCredentials: true
-  fetchDepth: 0 # Necesario para que Git tenga el historial para el push
+  fetchDepth: 0 # Permite obtener todo el historial para realizar el push
 
-# 2. Construcción de APK y AAB (Modo Debug sin firmar)
+# 2. Compilar APK y AAB en modo Debug (sin firmar)
 - task: Gradle@3
-  displayName: 'Compilar APK y AAB Debug'
+  displayName: 'Build APK & AAB Debug'
   inputs:
     gradleWrapperFile: 'gradlew'
     tasks: 'assembleDebug bundleDebug'
     publishJUnitResults: false
     javaHomeOption: 'JDKVersion'
-    jdkVersionOption: '1.21' # Recomendado para Gradle 9.3.x
+    jdkVersionOption: '1.21' # Optimizado para Gradle 9.3.x
 
-# 3. Colectar Archivos Generados
+# 3. Colectar los archivos generados
 - task: CopyFiles@2
   displayName: 'Colectar archivos para Azure'
   inputs:
@@ -35,7 +35,7 @@ steps:
     TargetFolder: '$(Build.ArtifactStagingDirectory)'
     flattenFolders: true
 
-# 4. Guardar archivos en la sección Artifacts de Azure
+# 4. Publicar archivos en la sección Artifacts de Azure DevOps
 - task: PublishBuildArtifacts@1
   displayName: 'Publicar Artefactos en Azure'
   inputs:
@@ -43,23 +43,22 @@ steps:
     ArtifactName: 'Android_Debug_Builds'
     publishLocation: 'Container'
 
-# 5. Sincronizar cambios de vuelta a GitHub
+# 5. Sincronizar cambios de vuelta a tu GitHub (Danielk10)
 - script: |
-    # Configuración de identidad de Git
-    git config --global user.email "daniel.elias.diamon@gmail.com"
-    git config --global user.name "Daniel Elias Diamon"
+    # Configuración de tu identidad real
+    git config --global user.email "danielpdiamon@gmail.com"
+    git config --global user.name "Danielk10"
     
-    # Reconfigurar el remoto usando el token del grupo de variables
-    # Se asume que la variable dentro del grupo también se llama GH_TOKEN
+    # Actualizar el remoto para usar autenticación por token
     git remote set-url origin https://$(GH_TOKEN)@$(repoUrl)
     
-    # Añadir un archivo de registro del build
-    echo "Last build: $(Build.BuildId) - Date: $(Build.QueuedAt)" > build_status.txt
+    # Crear un registro de la compilación para el commit
+    echo "Last build: $(Build.BuildId) - Date: $(Build.QueuedAt)" > build_info.txt
     git add .
     
-    # [skip ci] evita que este commit dispare otro build infinito
-    git commit -m "Automated update build $(Build.BuildId) [skip ci]"
+    # [skip ci] es CRÍTICO para no disparar el pipeline de nuevo infinitamente
+    git commit -m "Automated build $(Build.BuildId) [skip ci]"
     git push origin HEAD:main
-  displayName: 'Enviar cambios a GitHub'
+  displayName: 'Sincronizar con GitHub'
   env:
-    GH_TOKEN: $(GH_TOKEN) # Mapeo obligatorio de la variable del grupo al entorno
+    GH_TOKEN: $(GH_TOKEN) # Asegúrate de que el item dentro del grupo se llame GH_TOKEN
