@@ -24,30 +24,29 @@
     </string-array>
 
     <string-array name="eeprom_i2c_sizes">
-        <item>24C01</item>
-        <item>24C02</item>
-        <item>24C04</item>
-        <item>24C08</item>
-        <item>24C16</item>
-        <item>24C32</item>
-        <item>24C64</item>
-        <item>24C128</item>
-        <item>24C256</item>
-        <item>24C512</item>
+        <item>24Cxx 1Kb (128 bytes)</item>
+        <item>24Cxx 2Kb (256 bytes)</item>
+        <item>24Cxx 4Kb (512 bytes)</item>
+        <item>24Cxx 8Kb (1024 bytes)</item>
+        <item>24Cxx 16Kb (2048 bytes)</item>
+        <item>24Cxx 32Kb (4096 bytes)</item>
+        <item>24Cxx 64Kb (8192 bytes)</item>
+        <item>24Cxx 128Kb (16384 bytes)</item>
+        <item>24Cxx 256Kb (32768 bytes)</item>
+        <item>24Cxx 512Kb (65536 bytes)</item>
     </string-array>
 
     <string-array name="eeprom_spi_sizes">
-        <item>25xx010</item>
-        <item>25xx020</item>
-        <item>25xx040</item>
-        <item>25xx080</item>
-        <item>25xx160</item>
-        <item>25xx320</item>
-        <item>25xx640</item>
-        <item>25xx128</item>
-        <item>25xx256</item>
-        <item>25xx512</item>
-        <item>25xx1024</item>
+        <item>25Cxx 1Kb (128 bytes)</item>
+        <item>25Cxx 2Kb (256 bytes)</item>
+        <item>25Cxx 4Kb (512 bytes)</item>
+        <item>25Cxx 8Kb (1024 bytes)</item>
+        <item>25Cxx 16Kb (2048 bytes)</item>
+        <item>25Cxx 32Kb (4096 bytes)</item>
+        <item>25Cxx 64Kb (8192 bytes)</item>
+        <item>25Cxx 128Kb (16384 bytes)</item>
+        <item>25Cxx 256Kb (32768 bytes)</item>
+        <item>25Cxx 512Kb (65536 bytes)</item>
     </string-array>
 
     <string name="connect">Conectar</string>

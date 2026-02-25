@@ -56,14 +56,25 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
     private Runnable timeoutRunnable;
 
     private final int[] i2cSizes = { 128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536 };
-    private final int[] spiSizes = { 128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536, 131072 };
+    private final int[] spiSizes = { 128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536 };
 
-    private static final int PICK_FILE_REQUEST = 1001;
+    private androidx.activity.result.ActivityResultLauncher<Intent> filePickerLauncher;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        filePickerLauncher = registerForActivityResult(
+                new androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult(),
+                result -> {
+                    if (result.getResultCode() == RESULT_OK && result.getData() != null) {
+                        Uri uri = result.getData().getData();
+                        if (uri != null) {
+                            prepareWriteData(uri);
+                        }
+                    }
+                });
 
         initViews();
         setupSpinners();
@@ -262,18 +273,7 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
     private void startWrite() {
         Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
         intent.setType("*/*");
-        startActivityForResult(intent, PICK_FILE_REQUEST);
-    }
-
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode == PICK_FILE_REQUEST && resultCode == RESULT_OK && data != null) {
-            Uri uri = data.getData();
-            if (uri != null) {
-                prepareWriteData(uri);
-            }
-        }
+        filePickerLauncher.launch(intent);
     }
 
     private void prepareWriteData(Uri uri) {
@@ -403,6 +403,7 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
     // GUARDADO (EXPORT)
     // =========================================================================
 
+    @SuppressWarnings("deprecation")
     private void saveBuffer() {
         if (eepromBuffer == null || eepromBuffer.length == 0) {
             log("Error: No hay datos en el buffer para guardar.");

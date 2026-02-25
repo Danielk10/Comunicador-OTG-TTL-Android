@@ -216,7 +216,7 @@ void main(void) {
                             I2C_Write(data);
                         }
                         I2C_Stop();
-                        Delay_ms(5); // Ciclo de escritura EEPROM I2C
+                        Delay_ms(10); // Ciclo de escritura EEPROM I2C (10ms seguridad)
                         UART_Write('K'); // Acknowledge OK
                     }
                     break;
