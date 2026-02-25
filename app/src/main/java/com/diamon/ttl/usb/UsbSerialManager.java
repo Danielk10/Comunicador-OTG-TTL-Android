@@ -73,19 +73,14 @@ public class UsbSerialManager implements SerialInputOutputManager.Listener {
     private void requestPermission(UsbDevice device) {
         PendingIntent permissionIntent;
         Intent intent = new Intent(ACTION_USB_PERMISSION);
+        intent.setPackage(context.getPackageName());
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            permissionIntent = PendingIntent.getBroadcast(context, 0, intent, PendingIntent.FLAG_MUTABLE);
-        } else {
-            permissionIntent = PendingIntent.getBroadcast(context, 0, intent, 0);
-        }
+        int flags = Build.VERSION.SDK_INT >= Build.VERSION_CODES.M ? PendingIntent.FLAG_MUTABLE : 0;
+        permissionIntent = PendingIntent.getBroadcast(context, 0, intent, flags);
 
         IntentFilter filter = new IntentFilter(ACTION_USB_PERMISSION);
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            context.registerReceiver(usbPermissionReceiver, filter, Context.RECEIVER_NOT_EXPORTED);
-        } else {
-            context.registerReceiver(usbPermissionReceiver, filter);
-        }
+        androidx.core.content.ContextCompat.registerReceiver(context, usbPermissionReceiver, filter,
+                androidx.core.content.ContextCompat.RECEIVER_NOT_EXPORTED);
 
         usbManager.requestPermission(device, permissionIntent);
     }

@@ -1,6 +1,5 @@
 <resources>
     <string name="app_name">Comunicador OTG TTL</string>
-    <string name="under_construction">En construcción</string>
     <string name="menu_open_terminal">Abrir comunicador TTL</string>
 
     <string-array name="baudrates">

@@ -142,15 +142,19 @@ public class TerminalActivity extends AppCompatActivity implements UsbSerialList
 
             // Actualizar indicador visual de conexion
             if (connected) {
-                statusDot.setBackgroundColor(Color.parseColor("#3FB950"));
-                tvStatusLabel.setText("Conectado");
-                tvStatusLabel.setTextColor(Color.parseColor("#3FB950"));
+                statusDot.setBackgroundColor(
+                        androidx.core.content.ContextCompat.getColor(this, R.color.status_connected));
+                tvStatusLabel.setText(R.string.status_connected);
+                tvStatusLabel
+                        .setTextColor(androidx.core.content.ContextCompat.getColor(this, R.color.status_connected));
                 if (layoutStatus != null)
                     layoutStatus.setBackgroundColor(Color.parseColor("#112211"));
             } else {
-                statusDot.setBackgroundColor(Color.parseColor("#F85149"));
-                tvStatusLabel.setText("Desconectado");
-                tvStatusLabel.setTextColor(Color.parseColor("#F85149"));
+                statusDot.setBackgroundColor(
+                        androidx.core.content.ContextCompat.getColor(this, R.color.status_disconnected));
+                tvStatusLabel.setText(R.string.status_disconnected);
+                tvStatusLabel
+                        .setTextColor(androidx.core.content.ContextCompat.getColor(this, R.color.status_disconnected));
                 if (layoutStatus != null)
                     layoutStatus.setBackgroundColor(Color.parseColor("#1A0A0A"));
             }

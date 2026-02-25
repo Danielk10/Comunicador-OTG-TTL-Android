@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- Base -->
-    <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
 
     <!-- Fondo principal oscuro -->
@@ -41,7 +40,4 @@
     <color name="info_border">#1F6FEB</color>
     <color name="info_title">#58A6FF</color>
     <color name="info_text">#CDD9E5</color>
-
-    <!-- Borde sutil -->
-    <color name="border_subtle">#30363D</color>
 </resources>
