@@ -1,20 +1,46 @@
-# Android
-# Build your Android project with Gradle.
-# Add steps that test, sign, and distribute the APK, save build artifacts, and more:
-# https://docs.microsoft.com/azure/devops/pipelines/languages/android
-
 trigger:
-- main
+- main  # Escucha cambios externos en la rama main
 
 pool:
-  vmImage: 'macos-latest'
+  vmImage: 'ubuntu-latest'
+
+variables:
+  repoUrl: 'github.com/Danielk10/Comunicador-OTG-TTL-Android.git'
 
 steps:
-- task: Gradle@2
+- checkout: self
+  persistCredentials: true
+  fetchDepth: 0
+
+- task: Gradle@3
+  displayName: 'Build APK & AAB Debug'
   inputs:
-    workingDirectory: ''
     gradleWrapperFile: 'gradlew'
-    gradleOptions: '-Xmx3072m'
+    tasks: 'assembleDebug bundleDebug'
     publishJUnitResults: false
-    testResultsFiles: '**/TEST-*.xml'
-    tasks: 'assembleDebug'
+
+- task: CopyFiles@2
+  displayName: 'Colectar Archivos'
+  inputs:
+    Contents: |
+      **/*-debug.apk
+      **/*-debug.aab
+    TargetFolder: '$(Build.ArtifactStagingDirectory)'
+    flattenFolders: true
+
+- task: PublishBuildArtifacts@1
+  displayName: 'Publicar en Azure'
+  inputs:
+    PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+    ArtifactName: 'Android_Builds'
+
+- script: |
+    git config --global user.email "tu-email@ejemplo.com"
+    git config --global user.name "Daniel Elias"
+    git remote set-url origin https://$(GH_TOKEN)@$(repoUrl)
+    git add .
+    git commit -m "Build automático $(Build.BuildId) [skip ci]"
+    git push origin HEAD:main
+  displayName: 'Sincronizar con GitHub'
+  env:
+    GH_TOKEN: $(GH_TOKEN)
