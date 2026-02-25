@@ -1,4 +1,4 @@
-package com.diamon.ttl;
+package com.diamon.ttl.ui;
 
 import android.graphics.Color;
 import android.os.Bundle;
@@ -13,6 +13,9 @@ import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.diamon.ttl.R;
+import com.diamon.ttl.usb.UsbSerialListener;
+import com.diamon.ttl.usb.UsbSerialManager;
 import com.hoho.android.usbserial.driver.UsbSerialPort;
 
 import java.nio.charset.StandardCharsets;

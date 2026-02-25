@@ -30,8 +30,10 @@ import com.diamon.ttl.file.FileManager;
 import com.diamon.ttl.file.IntelHexFormat;
 import com.diamon.ttl.ui.HexViewerHelper;
 import com.diamon.ttl.ui.LogHelper;
+import com.diamon.ttl.ui.TerminalActivity;
 import com.diamon.ttl.usb.ProtocolState;
-
+import com.diamon.ttl.usb.UsbSerialListener;
+import com.diamon.ttl.usb.UsbSerialManager;
 import com.hoho.android.usbserial.driver.UsbSerialPort;
 
 import java.io.ByteArrayOutputStream;

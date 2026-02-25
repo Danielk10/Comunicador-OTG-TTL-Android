@@ -1,4 +1,4 @@
-package com.diamon.ttl;
+package com.diamon.ttl.usb;
 
 import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
