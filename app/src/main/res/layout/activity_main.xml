@@ -1,8 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:fillViewport="true">
+    android:orientation="vertical">
+
+    <androidx.appcompat.widget.Toolbar
+        android:id="@+id/toolbar"
+        android:layout_width="match_parent"
+        android:layout_height="?attr/actionBarSize"
+        android:background="#1A0A0A"
+        app:titleTextColor="#FFFFFF"
+        app:title="Programador EEPROM"
+        android:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar"
+        app:popupTheme="@style/ThemeOverlay.AppCompat.Light" />
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:fillViewport="true">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -188,11 +205,9 @@
         <!-- Hex Viewer Container -->
         <ScrollView
             android:layout_width="match_parent"
-            android:layout_height="0dp"
+            android:layout_height="280dp"
             android:layout_marginTop="8dp"
-            android:layout_weight="2"
             android:background="#000000"
-            android:minHeight="150dp"
             android:padding="8dp">
 
             <HorizontalScrollView
@@ -222,11 +237,10 @@
         <ScrollView
             android:id="@+id/scrollLog"
             android:layout_width="match_parent"
-            android:layout_height="0dp"
+            android:layout_height="150dp"
             android:layout_marginTop="4dp"
-            android:layout_weight="1"
+            android:layout_marginBottom="16dp"
             android:background="#1E1E1E"
-            android:minHeight="80dp"
             android:padding="8dp">
 
             <TextView
@@ -249,5 +263,5 @@
             android:visibility="gone"/>
 
     </LinearLayout>
-</ScrollView>
-
+    </ScrollView>
+</LinearLayout>
