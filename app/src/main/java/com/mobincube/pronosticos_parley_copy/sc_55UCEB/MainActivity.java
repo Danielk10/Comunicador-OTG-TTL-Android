@@ -31,7 +31,6 @@ import com.mobincube.pronosticos_parley_copy.sc_55UCEB.file.FileManager;
 import com.mobincube.pronosticos_parley_copy.sc_55UCEB.file.IntelHexFormat;
 import com.mobincube.pronosticos_parley_copy.sc_55UCEB.ui.HexViewerHelper;
 import com.mobincube.pronosticos_parley_copy.sc_55UCEB.ui.LogHelper;
-import com.mobincube.pronosticos_parley_copy.sc_55UCEB.ui.TerminalActivity;
 import com.mobincube.pronosticos_parley_copy.sc_55UCEB.usb.ProtocolState;
 import com.mobincube.pronosticos_parley_copy.sc_55UCEB.usb.UsbSerialListener;
 import com.mobincube.pronosticos_parley_copy.sc_55UCEB.usb.UsbSerialManager;
@@ -47,7 +46,7 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
     private UsbSerialManager serialManager;
 
     private Button btnConnect, btnDisconnect, btnRead, btnWrite, btnErase, btnVerify, btnSave, btnClearLog;
-    private Spinner spinnerBaudRate, spinnerProtocol, spinnerModel;
+    private Spinner spinnerProtocol, spinnerModel;
     private TextView tvStatusLabel, tvInstructions;
     private View statusDot, layoutStatus;
     private ProgressBar progressBar;
@@ -154,7 +153,6 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
         btnSave = findViewById(R.id.btnSave);
         btnClearLog = findViewById(R.id.btnClearLog);
 
-        spinnerBaudRate = findViewById(R.id.spinnerBaudRate);
         spinnerProtocol = findViewById(R.id.spinnerProtocol);
         spinnerModel = findViewById(R.id.spinnerModel);
 
@@ -174,12 +172,6 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
     }
 
     private void setupSpinners() {
-        ArrayAdapter<CharSequence> baudAdapter = ArrayAdapter.createFromResource(this, R.array.baudrates,
-                android.R.layout.simple_spinner_item);
-        baudAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        spinnerBaudRate.setAdapter(baudAdapter);
-        spinnerBaudRate.setSelection(4); // 9600
-
         ArrayAdapter<CharSequence> protAdapter = ArrayAdapter.createFromResource(this, R.array.eeprom_protocols,
                 android.R.layout.simple_spinner_item);
         protAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
@@ -211,7 +203,7 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
     }
 
     private void connectSerial() {
-        int baudRate = Integer.parseInt(spinnerBaudRate.getSelectedItem().toString());
+        int baudRate = 9600;
         serialManager.setSerialParameters(baudRate, 8, UsbSerialPort.STOPBITS_1, UsbSerialPort.PARITY_NONE);
         log("Conectando puerto serial a " + baudRate + " baudios...");
         serialManager.connect();
@@ -513,7 +505,6 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
         runOnUiThread(() -> {
             btnConnect.setEnabled(!connected);
             btnDisconnect.setEnabled(connected);
-            spinnerBaudRate.setEnabled(!connected);
 
             boolean isBusy = state != ProtocolState.IDLE;
 
@@ -556,10 +547,7 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
         int id = item.getItemId();
-        if (id == R.id.action_open_terminal) {
-            startActivity(new Intent(this, TerminalActivity.class));
-            return true;
-        } else if (id == R.id.action_about) {
+        if (id == R.id.action_about) {
             showAboutDialog();
             return true;
         } else if (id == R.id.action_pinout_pic) {

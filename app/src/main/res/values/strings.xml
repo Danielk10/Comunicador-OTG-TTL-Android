@@ -1,21 +1,5 @@
 <resources>
     <string name="app_name">OTG Flash EEPROM</string>
-    <string name="menu_open_terminal">Abrir comunicador TTL</string>
-
-    <string-array name="baudrates">
-        <item>300</item>
-        <item>1200</item>
-        <item>2400</item>
-        <item>4800</item>
-        <item>9600</item>
-        <item>19200</item>
-        <item>38400</item>
-        <item>57600</item>
-        <item>115200</item>
-        <item>230400</item>
-        <item>460800</item>
-        <item>921600</item>
-    </string-array>
 
     <string-array name="eeprom_protocols">
         <item>I2C (24Cxx)</item>

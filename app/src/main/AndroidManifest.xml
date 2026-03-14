@@ -33,7 +33,6 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.ComunicadorOTGTTLAndroid">
 
-        <activity android:name=".ui.TerminalActivity" />
         <activity android:name=".ui.HardwareInfoActivity" />
 
         <activity

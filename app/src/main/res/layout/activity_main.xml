@@ -1,324 +1,397 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="@color/bg_dark"
     android:orientation="vertical">
 
-    <androidx.appcompat.widget.Toolbar
+    <com.google.android.material.appbar.MaterialToolbar
         android:id="@+id/toolbar"
         android:layout_width="match_parent"
         android:layout_height="?attr/actionBarSize"
-        android:background="#1A0A0A"
-        app:titleTextColor="#FFFFFF"
-        app:title="Programador EEPROM"
-        android:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar"
-        app:popupTheme="@style/ThemeOverlay.AppCompat.Dark" />
+        android:background="@color/bg_header"
+        android:elevation="4dp"
+        app:title="OTG Flash EEPROM"
+        app:titleTextColor="@color/text_primary"
+        app:titleCentered="true" />
 
-    <ScrollView
+    <androidx.core.widget.NestedScrollView
         android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
+        android:layout_height="match_parent"
         android:fillViewport="true">
 
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:padding="16dp">
-
-        <!-- Status Header -->
         <LinearLayout
-            android:id="@+id/layoutStatus"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:background="#1A0A0A"
             android:orientation="vertical"
-            android:padding="16dp">
+            android:padding="12dp">
 
-            <LinearLayout
+            <!-- Connection Status Card -->
+            <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:gravity="center_vertical"
-                android:orientation="horizontal">
+                android:layout_marginBottom="12dp"
+                app:cardBackgroundColor="@color/bg_card"
+                app:cardCornerRadius="12dp"
+                app:strokeWidth="1dp"
+                app:strokeColor="#30363D">
 
-                <View
-                    android:id="@+id/statusDot"
-                    android:layout_width="14dp"
-                    android:layout_height="14dp"
-                    android:background="#F85149" />
-
-                <TextView
-                    android:id="@+id/tvStatusLabel"
-                    android:layout_width="0dp"
+                <LinearLayout
+                    android:id="@+id/layoutStatus"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="12dp"
-                    android:layout_weight="1"
-                    android:text="@string/status_disconnected"
-                    android:textColor="#F85149"
-                    android:textSize="18sp"
-                    android:textStyle="bold" />
-            </LinearLayout>
+                    android:padding="16dp"
+                    android:orientation="vertical">
 
-            <LinearLayout
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <View
+                            android:id="@+id/statusDot"
+                            android:layout_width="12dp"
+                            android:layout_height="12dp"
+                            android:background="@color/status_disconnected" />
+
+                        <TextView
+                            android:id="@+id/tvStatusLabel"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="12dp"
+                            android:layout_weight="1"
+                            android:text="@string/status_disconnected"
+                            android:textColor="@color/status_disconnected"
+                            android:textSize="16sp"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="16dp"
+                        android:orientation="horizontal">
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnConnect"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginEnd="6dp"
+                            android:layout_weight="1"
+                            android:text="@string/connect"
+                            app:backgroundTint="@color/btn_connect"
+                            app:cornerRadius="8dp" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnDisconnect"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="6dp"
+                            android:layout_weight="1"
+                            android:enabled="false"
+                            android:text="@string/disconnect"
+                            app:backgroundTint="@color/btn_disconnect"
+                            app:cornerRadius="8dp" />
+                    </LinearLayout>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Configuration Card -->
+            <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
-                android:orientation="horizontal">
+                android:layout_marginBottom="12dp"
+                app:cardBackgroundColor="@color/bg_card"
+                app:cardCornerRadius="12dp"
+                app:strokeWidth="1dp"
+                app:strokeColor="#30363D">
 
-                <Button
-                    android:id="@+id/btnConnect"
-                    android:layout_width="0dp"
+                <LinearLayout
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:layout_marginEnd="4dp"
-                    android:text="@string/connect" />
+                    android:orientation="vertical"
+                    android:padding="16dp">
 
-                <Button
-                    android:id="@+id/btnDisconnect"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:layout_marginStart="4dp"
-                    android:enabled="false"
-                    android:text="@string/disconnect" />
-            </LinearLayout>
-        </LinearLayout>
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Configuración"
+                        android:textColor="@color/text_secondary"
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
 
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:text="Configuración"
-            android:textSize="16sp"
-            android:textStyle="bold" />
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical">
 
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:orientation="horizontal">
+                        <TextView
+                            android:layout_width="90dp"
+                            android:layout_height="wrap_content"
+                            android:text="Protocolo:"
+                            android:textColor="@color/text_primary" />
 
-            <TextView
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="Baud Rate:" />
+                        <Spinner
+                            android:id="@+id/spinnerProtocol"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:backgroundTint="@color/text_secondary" />
+                    </LinearLayout>
 
-            <Spinner
-                android:id="@+id/spinnerBaudRate"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="2" />
-        </LinearLayout>
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical">
 
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:orientation="horizontal">
+                        <TextView
+                            android:layout_width="90dp"
+                            android:layout_height="wrap_content"
+                            android:text="Modelo:"
+                            android:textColor="@color/text_primary" />
 
-            <TextView
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="Protocolo:" />
+                        <Spinner
+                            android:id="@+id/spinnerModel"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:backgroundTint="@color/text_secondary" />
+                    </LinearLayout>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
 
-            <Spinner
-                android:id="@+id/spinnerProtocol"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="2" />
-        </LinearLayout>
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:orientation="horizontal">
-
-            <TextView
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="Modelo:" />
-
-            <Spinner
-                android:id="@+id/spinnerModel"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="2" />
-        </LinearLayout>
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:text="@string/connection_instructions"
-            android:textSize="16sp"
-            android:textStyle="bold" />
-
-        <TextView
-            android:id="@+id/tvInstructions"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:background="@color/info_bg"
-            android:padding="8dp"
-            android:text="Selecciona un protocolo para ver las instrucciones."
-            android:textColor="@color/info_text"
-            android:typeface="monospace"/>
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:text="Acciones"
-            android:textSize="16sp"
-            android:textStyle="bold" />
-
-        <GridLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:columnCount="2"
-            android:alignmentMode="alignMargins">
-
-            <Button
-                android:id="@+id/btnRead"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_columnWeight="1"
-                android:layout_margin="2dp"
-                android:enabled="false"
-                android:text="@string/read_eeprom" />
-
-            <Button
-                android:id="@+id/btnWrite"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_columnWeight="1"
-                android:layout_margin="2dp"
-                android:enabled="false"
-                android:text="@string/write_eeprom" />
-
-            <Button
-                android:id="@+id/btnErase"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_columnWeight="1"
-                android:layout_margin="2dp"
-                android:enabled="false"
-                android:text="@string/erase_eeprom" />
-
-            <Button
-                android:id="@+id/btnVerify"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_columnWeight="1"
-                android:layout_margin="2dp"
-                android:enabled="false"
-                android:text="@string/verify_eeprom" />
-
-            <Button
-                android:id="@+id/btnSave"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_columnWeight="2"
-                android:layout_columnSpan="2"
-                android:layout_margin="2dp"
-                android:enabled="false"
-                android:text="@string/save_eeprom" />
-        </GridLayout>
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:text="Visor de Memoria Hexadecimal"
-            android:textSize="16sp"
-            android:textStyle="bold" />
-
-        <!-- Hex Viewer Container -->
-        <ScrollView
-            android:layout_width="match_parent"
-            android:layout_height="280dp"
-            android:layout_marginTop="8dp"
-            android:background="#000000"
-            android:padding="8dp">
-
-            <HorizontalScrollView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content">
-
-                <TextView
-                    android:id="@+id/tvHexViewer"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Esperando lectura..."
-                    android:textColor="#00FF00"
-                    android:textIsSelectable="true"
-                    android:typeface="monospace" />
-            </HorizontalScrollView>
-        </ScrollView>
-
-        <!-- Log Container -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:gravity="center_vertical"
-            android:orientation="horizontal">
-
-            <TextView
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="Registro de Operaciones (Log)"
-                android:textColor="#CCCCCC"
-                android:textStyle="bold" />
-
-            <Button
-                android:id="@+id/btnClearLog"
-                style="?android:attr/borderlessButtonStyle"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:minHeight="0dp"
-                android:padding="8dp"
-                android:text="@string/clear_log"
-                android:textAllCaps="false"
-                android:textColor="#3FB1CE"
-                android:textSize="12sp" />
-        </LinearLayout>
-
-        <ScrollView
-            android:id="@+id/scrollLog"
-            android:layout_width="match_parent"
-            android:layout_height="150dp"
-            android:layout_marginTop="4dp"
-            android:layout_marginBottom="16dp"
-            android:background="#1E1E1E"
-            android:padding="8dp">
-
-            <TextView
-                android:id="@+id/tvLog"
+            <!-- Instructions Card -->
+            <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="> Aplicación lista.\n"
-                android:textColor="#AAAAAA"
-                android:textSize="12sp"
-                android:textIsSelectable="true"
-                android:typeface="monospace" />
-        </ScrollView>
+                android:layout_marginBottom="12dp"
+                app:cardBackgroundColor="@color/info_bg"
+                app:cardCornerRadius="8dp"
+                app:strokeWidth="1dp"
+                app:strokeColor="@color/info_border">
 
-        <ProgressBar
-            android:id="@+id/progressBar"
-            style="?android:attr/progressBarStyleHorizontal"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:visibility="gone"/>
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="12dp">
 
-    </LinearLayout>
-    </ScrollView>
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/connection_instructions"
+                        android:textColor="@color/info_title"
+                        android:textSize="12sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/tvInstructions"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:text="Cargando instrucciones..."
+                        android:textColor="@color/info_text"
+                        android:textSize="13sp"
+                        android:typeface="monospace" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Actions Card -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp"
+                app:cardBackgroundColor="@color/bg_card"
+                app:cardCornerRadius="12dp"
+                app:strokeWidth="1dp"
+                app:strokeColor="#30363D">
+
+                <GridLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:padding="8dp"
+                    android:columnCount="2"
+                    android:alignmentMode="alignMargins">
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnRead"
+                        style="@style/Widget.Material3.Button.TonalButton"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_columnWeight="1"
+                        android:layout_margin="4dp"
+                        android:text="@string/read_eeprom"
+                        android:enabled="false"
+                        app:icon="@android:drawable/ic_menu_search" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnWrite"
+                        style="@style/Widget.Material3.Button.TonalButton"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_columnWeight="1"
+                        android:layout_margin="4dp"
+                        android:text="@string/write_eeprom"
+                        android:enabled="false"
+                        app:icon="@android:drawable/ic_menu_edit" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnErase"
+                        style="@style/Widget.Material3.Button.TonalButton"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_columnWeight="1"
+                        android:layout_margin="4dp"
+                        android:text="@string/erase_eeprom"
+                        android:enabled="false"
+                        app:icon="@android:drawable/ic_menu_delete" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnVerify"
+                        style="@style/Widget.Material3.Button.TonalButton"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_columnWeight="1"
+                        android:layout_margin="4dp"
+                        android:text="@string/verify_eeprom"
+                        android:enabled="false"
+                        app:icon="@android:drawable/ic_menu_info_details" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnSave"
+                        style="@style/Widget.Material3.Button"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_columnSpan="2"
+                        android:layout_columnWeight="1"
+                        android:layout_margin="4dp"
+                        android:text="@string/save_eeprom"
+                        android:enabled="false"
+                        app:backgroundTint="@color/btn_send"
+                        app:icon="@android:drawable/ic_menu_save" />
+                </GridLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Memory Viewer Card -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp"
+                app:cardBackgroundColor="@color/bg_card"
+                app:cardCornerRadius="12dp"
+                app:strokeWidth="1dp"
+                app:strokeColor="#30363D">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="12dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="8dp"
+                        android:text="Visor Hexadecimal"
+                        android:textColor="@color/text_secondary"
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
+
+                    <FrameLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="300dp"
+                        android:background="@color/bg_terminal"
+                        android:padding="8dp">
+
+                        <HorizontalScrollView
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent">
+
+                            <TextView
+                                android:id="@+id/tvHexViewer"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Esperando lectura..."
+                                android:textColor="@color/text_terminal"
+                                android:textSize="13sp"
+                                android:typeface="monospace" />
+                        </HorizontalScrollView>
+                    </FrameLayout>
+
+                    <ProgressBar
+                        android:id="@+id/progressBar"
+                        style="?android:attr/progressBarStyleHorizontal"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:progressTint="@color/color_primary"
+                        android:visibility="gone" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Log Card -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                app:cardBackgroundColor="@color/bg_card"
+                app:cardCornerRadius="12dp"
+                app:strokeWidth="1dp"
+                app:strokeColor="#30363D">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="12dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical">
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Log de Operaciones"
+                            android:textColor="@color/text_secondary"
+                            android:textSize="14sp"
+                            android:textStyle="bold" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnClearLog"
+                            style="@style/Widget.Material3.Button.TextButton"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/clear_log"
+                            android:textSize="12sp" />
+                    </LinearLayout>
+
+                    <ScrollView
+                        android:id="@+id/scrollLog"
+                        android:layout_width="match_parent"
+                        android:layout_height="120dp"
+                        android:background="#1C2128"
+                        android:padding="8dp">
+
+                        <TextView
+                            android:id="@+id/tvLog"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="> Aplicación lista.\n"
+                            android:textColor="@color/text_secondary"
+                            android:textSize="12sp"
+                            android:typeface="monospace" />
+                    </ScrollView>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+        </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
 </LinearLayout>
