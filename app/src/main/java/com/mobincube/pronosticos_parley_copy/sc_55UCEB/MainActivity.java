@@ -48,29 +48,38 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
 
     private Button btnConnect, btnDisconnect, btnRead, btnWrite, btnErase,
                    btnVerify, btnSave, btnClearLog, btnScan, btnFullDump;
-    private Spinner spinnerProtocol, spinnerModel;
-    private TextView tvStatusLabel, tvInstructions;
-    private View statusDot, layoutStatus;
+    private Spinner  spinnerProtocol, spinnerModel;
+    private TextView tvStatusLabel,   tvInstructions;
+    private View     statusDot,        layoutStatus;
 
-    // ─── NOTA: ProgressBar ELIMINADA de la actividad principal.
-    // Solo se usa la barra del PopupWindow (popupProgressBar en popup_hex_viewer.xml).
-    // ─────────────────────────────────────────────────────────
-
+    // ── Estado de la máquina ────────────────────────────────────────────────
     private volatile ProtocolState state = ProtocolState.IDLE;
 
-    private LogHelper logHelper;
+    // ── Caché del protocolo activo (asignado en hilo UI, leído en hilo IO) ──
+    // FIX #3/#8: NUNCA acceder a spinners desde onSerialRead (hilo fondo).
+    private volatile EepromProtocol cachedProtocol;
+    private volatile int            cachedModelIndex;
+    private volatile int            cachedPageSize;
+
+    // ── Full Dump SPI: leer JEDEC primero para obtener tamaño real ──────────
+    // FIX #5: pendingFullDump indica que SCANNING_ID debe arrancar FULL_DUMPING
+    private volatile boolean pendingFullDump = false;
+
+    // ── Helpers de UI ───────────────────────────────────────────────────────
+    private LogHelper       logHelper;
     private HexViewerHelper hexHelper;
 
-    private byte[] eepromBuffer;
-    private byte[] writeDataBuffer;
-    private volatile int currentAddress = 0;
-    private volatile int totalSize      = 0;
+    // ── Buffers y contadores ────────────────────────────────────────────────
+    private byte[]                writeDataBuffer;
+    private byte[]                eepromBuffer;
+    private volatile int          currentAddress = 0;
+    private volatile int          totalSize      = 0;
     private ByteArrayOutputStream readStream;
 
-    private final int MAX_WRITE_CHUNK_SIZE = 64;
-    private final int READ_CHUNK_SIZE      = 64;
+    private static final int MAX_WRITE_CHUNK = 64;
+    private static final int READ_CHUNK      = 64;
 
-    // ─── Handler siempre en el hilo principal ───────────────────────────────
+    // ── Hilo principal para TODO acceso a UI ────────────────────────────────
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
     private Runnable timeoutRunnable;
 
@@ -106,29 +115,32 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
         serialManager = new UsbSerialManager(this, this);
         updateUIState(false);
 
-        btnConnect.setOnClickListener(v -> connectSerial());
+        btnConnect.setOnClickListener(v    -> connectSerial());
         btnDisconnect.setOnClickListener(v -> disconnectSerial());
-        btnRead.setOnClickListener(v -> startRead());
-        btnWrite.setOnClickListener(v -> startWrite());
-        btnErase.setOnClickListener(v -> startErase());
-        btnVerify.setOnClickListener(v -> startVerify());
-        btnSave.setOnClickListener(v -> saveBuffer());
-        btnClearLog.setOnClickListener(v -> clearLog());
-        btnScan.setOnClickListener(v -> startScan());
-        btnFullDump.setOnClickListener(v -> startFullDump());
+        btnRead.setOnClickListener(v       -> startRead());
+        btnWrite.setOnClickListener(v      -> startWrite());
+        btnErase.setOnClickListener(v      -> startErase());
+        btnVerify.setOnClickListener(v     -> startVerify());
+        btnSave.setOnClickListener(v       -> saveBuffer());
+        btnClearLog.setOnClickListener(v   -> clearLog());
+        btnScan.setOnClickListener(v       -> startScan());
+        btnFullDump.setOnClickListener(v   -> startFullDump());
 
-        // Timeout genérico: si en 10 s no llega respuesta, resetear estado
         timeoutRunnable = () -> {
             if (state != ProtocolState.IDLE) {
-                log("⚠ Tiempo de espera agotado (estado: " + state + ").");
+                log("⚠ Timeout sin respuesta (estado: " + state + ").");
+                if (state == ProtocolState.FULL_DUMPING)
+                    log("  SPI: verifica que el modelo coincida con el chip real.");
                 Toast.makeText(this, "Timeout — sin respuesta del PIC", Toast.LENGTH_SHORT).show();
                 state = ProtocolState.IDLE;
+                pendingFullDump = false;
                 updateUIState(serialManager.isConnected());
                 hexHelper.dismiss();
             }
         };
     }
 
+    // ── initViews ─────────────────────────────────────────────────────────
     private void initViews() {
         btnConnect    = findViewById(R.id.btnConnect);
         btnDisconnect = findViewById(R.id.btnDisconnect);
@@ -140,49 +152,52 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
         btnClearLog   = findViewById(R.id.btnClearLog);
         btnScan       = findViewById(R.id.btnScan);
         btnFullDump   = findViewById(R.id.btnFullDump);
-
         spinnerProtocol = findViewById(R.id.spinnerProtocol);
         spinnerModel    = findViewById(R.id.spinnerModel);
-
         tvStatusLabel   = findViewById(R.id.tvStatusLabel);
         tvInstructions  = findViewById(R.id.tvInstructions);
+        statusDot       = findViewById(R.id.statusDot);
+        layoutStatus    = findViewById(R.id.layoutStatus);
 
-        TextView tvLog     = findViewById(R.id.tvLog);
-        ScrollView scrollLog = findViewById(R.id.scrollLog);
-        statusDot   = findViewById(R.id.statusDot);
-        layoutStatus = findViewById(R.id.layoutStatus);
-
-        logHelper = new LogHelper(this, tvLog, scrollLog);
-        hexHelper = new HexViewerHelper(this);
+        TextView   tvLog   = findViewById(R.id.tvLog);
+        ScrollView scroll  = findViewById(R.id.scrollLog);
+        logHelper  = new LogHelper(this, tvLog, scroll);
+        hexHelper  = new HexViewerHelper(this);
     }
 
+    // ── Spinners ──────────────────────────────────────────────────────────
     private void setupSpinners() {
-        ArrayAdapter<CharSequence> protAdapter = ArrayAdapter.createFromResource(
+        ArrayAdapter<CharSequence> pa = ArrayAdapter.createFromResource(
                 this, R.array.eeprom_protocols, android.R.layout.simple_spinner_item);
-        protAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        spinnerProtocol.setAdapter(protAdapter);
+        pa.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        spinnerProtocol.setAdapter(pa);
 
         spinnerProtocol.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-            @Override
-            public void onItemSelected(AdapterView<?> p, View v, int pos, long id) {
+            @Override public void onItemSelected(AdapterView<?> p, View v, int pos, long id) {
                 updateModelSpinner(pos);
                 tvInstructions.setText(getActiveProtocol().getHardwareInstructions());
             }
-            @Override
-            public void onNothingSelected(AdapterView<?> p) {}
+            @Override public void onNothingSelected(AdapterView<?> p) {}
         });
     }
 
-    private EepromProtocol getActiveProtocol() {
+    private EepromProtocol getActiveProtocol() {            // Solo hilo UI
         return spinnerProtocol.getSelectedItemPosition() == 0 ? i2cProtocol : spiProtocol;
     }
 
     private void updateModelSpinner(int protocolIndex) {
-        int arrayResId = (protocolIndex == 0) ? R.array.eeprom_i2c_sizes : R.array.eeprom_spi_sizes;
-        ArrayAdapter<CharSequence> modelAdapter = ArrayAdapter.createFromResource(
-                this, arrayResId, android.R.layout.simple_spinner_item);
-        modelAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        spinnerModel.setAdapter(modelAdapter);
+        int res = (protocolIndex == 0) ? R.array.eeprom_i2c_sizes : R.array.eeprom_spi_sizes;
+        ArrayAdapter<CharSequence> a = ArrayAdapter.createFromResource(
+                this, res, android.R.layout.simple_spinner_item);
+        a.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        spinnerModel.setAdapter(a);
+    }
+
+    /** Captura protocolo, modelo y pageSize en el hilo UI antes de cualquier operación. */
+    private void cacheProtocol() {
+        cachedProtocol   = getActiveProtocol();
+        cachedModelIndex = spinnerModel.getSelectedItemPosition();
+        cachedPageSize   = cachedProtocol.getPageSize(cachedModelIndex);
     }
 
     // =========================================================================
@@ -200,13 +215,11 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
         serialManager.disconnect();
     }
 
-    private void log(final String message) {
-        if (logHelper != null) logHelper.log(message);
-    }
+    private void log(String msg) { if (logHelper != null) logHelper.log(msg); }
 
     // =========================================================================
-    // LECTURA (chunk-based)
-    // Protocolo: 49 52 ... → [datos 64B] 55 → siguiente chunk → ... → 55 final
+    // LECTURA por chunks
+    // Protocolo: 49 52 / 50 52  +  N bytes datos  +  0x55(RESP_END)
     // =========================================================================
 
     private void startRead() {
@@ -214,14 +227,13 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
             Toast.makeText(this, "Conecte el dispositivo primero", Toast.LENGTH_SHORT).show();
             return;
         }
-        state = ProtocolState.READING;
+        cacheProtocol();
+        totalSize      = cachedProtocol.getTotalSize(cachedModelIndex);
         currentAddress = 0;
-        readStream = new ByteArrayOutputStream();
+        readStream     = new ByteArrayOutputStream();
+        state          = ProtocolState.READING;
 
-        int model = spinnerModel.getSelectedItemPosition();
-        totalSize = getActiveProtocol().getTotalSize(model);
-
-        log("Leyendo " + totalSize + " bytes en bloques de " + READ_CHUNK_SIZE + " B...");
+        log("Leyendo " + totalSize + " bytes [" + spinnerModel.getSelectedItem() + "]...");
         hexHelper.showPopup("Leyendo memoria...", totalSize);
         updateUIState(true);
         requestNextReadChunk();
@@ -229,18 +241,14 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
 
     private void requestNextReadChunk() {
         if (state != ProtocolState.READING) return;
-        if (currentAddress >= totalSize) {
-            finishRead();
-            return;
-        }
-        int len = Math.min(READ_CHUNK_SIZE, totalSize - currentAddress);
-        int modelIdx = spinnerModel.getSelectedItemPosition();
-        byte[] cmd = getActiveProtocol().buildReadCommand(currentAddress, len, modelIdx);
-        serialManager.sendData(cmd);
-        resetTimeout(8000);   // 8 s por chunk
+        if (currentAddress >= totalSize)    { finishRead(); return; }
+        int len = Math.min(READ_CHUNK, totalSize - currentAddress);
+        serialManager.sendData(
+                cachedProtocol.buildReadCommand(currentAddress, len, cachedModelIndex));
+        resetTimeout(10000);
     }
 
-    // ─── CORRECCIÓN CRÍTICA: finishRead() siempre en hilo principal ──────────
+    // FIX: siempre llamado via mainHandler.post() → hilo UI
     private void finishRead() {
         mainHandler.post(() -> {
             state = ProtocolState.IDLE;
@@ -249,105 +257,96 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
             log("✓ Lectura completada: " + eepromBuffer.length + " bytes.");
             Toast.makeText(this, "Lectura completada", Toast.LENGTH_SHORT).show();
             updateUIState(true);
-            hexHelper.renderNow(eepromBuffer);
+            hexHelper.renderFinal(eepromBuffer);
             hexHelper.updateProgress(eepromBuffer.length);
         });
     }
 
     // =========================================================================
-    // ESCRITURA
-    // Protocolo: 49 57 ... + [datos] → 4B (OK por chunk) → siguiente chunk
+    // ESCRITURA por chunks
+    // Protocolo: 49 57 / 50 57  +  datos  →  0x4B por chunk completado
     // =========================================================================
 
     private void startWrite() {
-        Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
-        intent.setType("*/*");
-        filePickerLauncher.launch(intent);
+        Intent i = new Intent(Intent.ACTION_GET_CONTENT);
+        i.setType("*/*");
+        filePickerLauncher.launch(i);
     }
 
     private void prepareWriteData(Uri uri) {
         try {
             InputStream is = getContentResolver().openInputStream(uri);
             if (is == null) return;
-
             ByteArrayOutputStream buf = new ByteArrayOutputStream();
-            byte[] tmp = new byte[1024];
-            int n;
+            byte[] tmp = new byte[1024]; int n;
             while ((n = is.read(tmp, 0, tmp.length)) != -1) buf.write(tmp, 0, n);
-            buf.flush();
-            byte[] rawData = buf.toByteArray();
-            is.close();
+            buf.flush(); is.close();
+            byte[] raw = buf.toByteArray();
 
-            int model    = spinnerModel.getSelectedItemPosition();
-            totalSize    = getActiveProtocol().getTotalSize(model);
-            String fName = "Archivo";
-
-            android.database.Cursor cursor = getContentResolver().query(uri, null, null, null, null);
-            if (cursor != null && cursor.moveToFirst()) {
-                int idx = cursor.getColumnIndex(android.provider.OpenableColumns.DISPLAY_NAME);
-                if (idx != -1) fName = cursor.getString(idx);
-                cursor.close();
+            cacheProtocol();
+            int memSize = cachedProtocol.getTotalSize(cachedModelIndex);
+            String fname = "Archivo";
+            android.database.Cursor c =
+                    getContentResolver().query(uri, null, null, null, null);
+            if (c != null && c.moveToFirst()) {
+                int idx = c.getColumnIndex(android.provider.OpenableColumns.DISPLAY_NAME);
+                if (idx != -1) fname = c.getString(idx);
+                c.close();
             }
+            log("Archivo: " + fname + " (" + raw.length + " B)");
 
-            log("Archivo: " + fName + " (" + rawData.length + " B)");
-
-            if (fName.toLowerCase(java.util.Locale.ROOT).endsWith(".hex") ||
-                    (rawData.length > 0 && rawData[0] == ':')) {
-                log("Formato Intel Hex detectado, parseando...");
+            if (fname.toLowerCase(java.util.Locale.ROOT).endsWith(".hex")
+                    || (raw.length > 0 && raw[0] == ':')) {
+                log("Intel Hex detectado, parseando...");
                 try {
-                    writeDataBuffer = IntelHexFormat.parseIntelHex(rawData, totalSize);
-                    log("Hex procesado: " + writeDataBuffer.length + " bytes.");
+                    writeDataBuffer = IntelHexFormat.parseIntelHex(raw, memSize);
+                    log("Hex → " + writeDataBuffer.length + " bytes.");
                 } catch (HexParseException ex) {
-                    log("Error Hex: " + ex.getMessage() + " — tratando como binario.");
-                    writeDataBuffer = rawData;
+                    log("Hex parse error: " + ex.getMessage() + " — usando binario.");
+                    writeDataBuffer = raw;
                 }
             } else {
-                writeDataBuffer = rawData;
+                writeDataBuffer = raw;
             }
 
-            if (writeDataBuffer.length > totalSize) {
-                log("Error: archivo (" + writeDataBuffer.length + " B) > memoria (" + totalSize + " B).");
+            if (writeDataBuffer.length > memSize) {
+                log("Error: archivo (" + writeDataBuffer.length + " B) > memoria (" + memSize + " B).");
                 Toast.makeText(this, "Archivo excede la capacidad", Toast.LENGTH_LONG).show();
                 return;
             }
 
-            log("Escribiendo " + writeDataBuffer.length + " bytes...");
+            totalSize = writeDataBuffer.length;
             state = ProtocolState.WRITING;
             currentAddress = 0;
-            hexHelper.showPopup("Escribiendo memoria...", writeDataBuffer.length);
+            log("Escribiendo " + totalSize + " bytes...");
+            hexHelper.showPopup("Escribiendo memoria...", totalSize);
             updateUIState(true);
             sendNextWriteChunk();
 
         } catch (Exception e) {
             Log.e(TAG, "prepareWriteData", e);
-            Toast.makeText(this, "Error leyendo archivo: " + e.getMessage(), Toast.LENGTH_LONG).show();
+            Toast.makeText(this, "Error: " + e.getMessage(), Toast.LENGTH_LONG).show();
         }
     }
 
     private void sendNextWriteChunk() {
         if (state != ProtocolState.WRITING) return;
-        if (currentAddress >= writeDataBuffer.length) {
-            finishWrite();
-            return;
-        }
-        int model              = spinnerModel.getSelectedItemPosition();
-        int pageSize           = getActiveProtocol().getPageSize(model);
-        int bytesToNextBound   = pageSize - (currentAddress % pageSize);
-        int chunkLimit         = Math.min(bytesToNextBound, MAX_WRITE_CHUNK_SIZE);
-        int len                = Math.min(chunkLimit, writeDataBuffer.length - currentAddress);
+        if (currentAddress >= writeDataBuffer.length) { finishWrite(); return; }
+
+        // FIX #3: usar cachedPageSize (hilo UI), NO spinnerModel.getSelectedItemPosition()
+        int toNext = cachedPageSize - (currentAddress % cachedPageSize);
+        int limit  = Math.min(toNext, MAX_WRITE_CHUNK);
+        int len    = Math.min(limit, writeDataBuffer.length - currentAddress);
 
         try {
-            ByteArrayOutputStream cmdStream = new ByteArrayOutputStream();
-            cmdStream.write(getActiveProtocol().buildWriteCommandBase(currentAddress, len, model));
-            cmdStream.write(writeDataBuffer, currentAddress, len);
-            serialManager.sendData(cmdStream.toByteArray());
-            resetTimeout(8000);
-        } catch (Exception e) {
-            Log.e(TAG, "sendNextWriteChunk", e);
-        }
+            ByteArrayOutputStream cs = new ByteArrayOutputStream();
+            cs.write(cachedProtocol.buildWriteCommandBase(currentAddress, len, cachedModelIndex));
+            cs.write(writeDataBuffer, currentAddress, len);
+            serialManager.sendData(cs.toByteArray());
+            resetTimeout(10000);
+        } catch (Exception e) { Log.e(TAG, "sendNextWriteChunk", e); }
     }
 
-    // ─── CORRECCIÓN CRÍTICA: finishWrite() siempre en hilo principal ─────────
     private void finishWrite() {
         mainHandler.post(() -> {
             state = ProtocolState.IDLE;
@@ -356,44 +355,40 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
             Toast.makeText(this, "Escritura completada", Toast.LENGTH_SHORT).show();
             updateUIState(true);
             hexHelper.updateProgress(writeDataBuffer.length);
-            hexHelper.renderNow(writeDataBuffer);
+            hexHelper.renderFinal(writeDataBuffer);
         });
     }
 
     // =========================================================================
     // BORRADO
-    // I2C: sobrescritura con 0xFF (reusa flujo de escritura)
-    // SPI: 50 45 → esperar 4B (OK) o 58 (ERR)
     // =========================================================================
 
     private void startErase() {
         if (!serialManager.isConnected()) return;
-        int modelIdx = spinnerModel.getSelectedItemPosition();
-        byte[] cmd   = getActiveProtocol().buildEraseCommand(modelIdx);
+        cacheProtocol();
+        byte[] cmd = cachedProtocol.buildEraseCommand(cachedModelIndex);
 
         if (cmd == null) {
-            // I2C: rellenar con 0xFF
-            log("Borrando I2C (sobrescritura con 0xFF)...");
-            totalSize      = getActiveProtocol().getTotalSize(modelIdx);
-            writeDataBuffer = new byte[totalSize];
+            // I2C: sobrescribir con 0xFF
+            int sz = cachedProtocol.getTotalSize(cachedModelIndex);
+            log("Borrando I2C (" + sz + " B con 0xFF)...");
+            writeDataBuffer = new byte[sz];
             java.util.Arrays.fill(writeDataBuffer, (byte) 0xFF);
-            state          = ProtocolState.WRITING;
-            currentAddress = 0;
-            hexHelper.showPopup("Borrando I2C (0xFF)...", totalSize);
+            totalSize = sz; state = ProtocolState.WRITING; currentAddress = 0;
+            hexHelper.showPopup("Borrando I2C (0xFF)...", sz);
             updateUIState(true);
             sendNextWriteChunk();
         } else {
-            // SPI Chip Erase nativo
-            log("Iniciando Chip Erase SPI...");
+            // SPI Flash NOR: Chip Erase nativo
+            log("Chip Erase SPI (puede tardar varios minutos)...");
             state = ProtocolState.ERASING;
             serialManager.sendData(cmd);
-            hexHelper.showPopup("Borrando chip SPI... (puede tardar minutos)", 1);
+            hexHelper.showPopup("Borrando chip SPI...", 1);
             updateUIState(true);
-            resetTimeout(180000);  // 3 min para chips grandes
+            resetTimeout(300000); // 5 min máx para chips grandes
         }
     }
 
-    // ─── CORRECCIÓN CRÍTICA: finishErase() siempre en hilo principal ─────────
     private void finishErase() {
         mainHandler.post(() -> {
             state = ProtocolState.IDLE;
@@ -411,22 +406,21 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
 
     private void startVerify() {
         if (eepromBuffer == null || writeDataBuffer == null) {
-            Toast.makeText(this, "Se necesitan datos leídos y de archivo", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Se necesitan datos leídos y archivo cargado", Toast.LENGTH_SHORT).show();
             return;
         }
-        log("Verificando...");
-        int size   = Math.min(eepromBuffer.length, writeDataBuffer.length);
+        log("Verificando datos...");
+        int size = Math.min(eepromBuffer.length, writeDataBuffer.length);
         int errors = 0;
         for (int i = 0; i < size; i++) {
             if (eepromBuffer[i] != writeDataBuffer[i]) {
-                if (errors < 10)
-                    log(String.format("  Diff 0x%06X: leído 0x%02X esperado 0x%02X",
-                            i, eepromBuffer[i] & 0xFF, writeDataBuffer[i] & 0xFF));
+                if (errors < 10) log(String.format("  Diff 0x%06X: leído=0x%02X esperado=0x%02X",
+                        i, eepromBuffer[i] & 0xFF, writeDataBuffer[i] & 0xFF));
                 errors++;
             }
         }
         if (errors == 0) {
-            log("✓ VERIFICACIÓN OK: los datos coinciden.");
+            log("✓ VERIFICACIÓN OK: datos coinciden perfectamente.");
             Toast.makeText(this, "Verificación exitosa", Toast.LENGTH_SHORT).show();
         } else {
             log("✗ " + errors + " diferencias encontradas.");
@@ -435,48 +429,102 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
     }
 
     // =========================================================================
-    // SCAN / ID
-    // I2C Scan : 49 53 → [addr7]... FF
+    // SCAN / JEDEC ID
+    // I2C Scan: 49 53 → [addr7]... 0xFF
     // SPI JEDEC: 50 4A → [Mfr][Type][Cap]
     // =========================================================================
 
     private void startScan() {
         if (!serialManager.isConnected()) return;
+        cacheProtocol(); // FIX #8: capturar en hilo UI
         state = ProtocolState.SCANNING_ID;
         readStream = new ByteArrayOutputStream();
-        byte[] cmd = getActiveProtocol().buildScanOrIdCommand();
-        log((getActiveProtocol() instanceof I2cProtocol) ? "Escaneando bus I2C..." : "Leyendo JEDEC ID...");
+        byte[] cmd = cachedProtocol.buildScanOrIdCommand();
+        log((cachedProtocol instanceof I2cProtocol) ? "Escaneando bus I2C..." : "Leyendo JEDEC ID...");
         serialManager.sendData(cmd);
-        resetTimeout(10000);   // Scan puede tardar hasta ~0.5 s × 112 dir
+        resetTimeout(12000);
         updateUIState(true);
     }
 
     // =========================================================================
     // FULL DUMP
-    // I2C: 49 46 addr_len chip_addr LH LL → [bytes] 55
-    // SPI: 50 46 → (JEDEC auto) → [bytes] 55
+    //
+    // FIX #4 (I2C multi-bloque):
+    //   El comando '49 46' del firmware siempre usa chipAddr=0xA0 fijo.
+    //   Para 24C04/08/16 (chips multi-bloque), al llegar a 256 bytes el
+    //   puntero de dirección hace rollover dentro del bloque 0, leyendo
+    //   repetidamente el primer bloque en lugar de pasar al bloque 1.
+    //   Solución: usar READING state (chunk-based) para I2C. El método
+    //   buildReadCommand() llama generateChipAddr() por cada chunk,
+    //   obteniendo el chipAddr correcto para cada bloque (0xA0, 0xA2…).
+    //
+    // FIX #5 (SPI size mismatch):
+    //   Si el tamaño JEDEC del chip ≠ modelo seleccionado, RESP_END (0x55)
+    //   llega antes de que readStream.size() >= totalSize, y se escribe
+    //   como dato en lugar de disparar finishRead() → timeout silencioso.
+    //   Solución: enviar primero JEDEC (50 4A) para calcular totalSize real,
+    //   luego iniciar el volcado (50 46) con el tamaño exacto.
     // =========================================================================
 
     private void startFullDump() {
         if (!serialManager.isConnected()) return;
+        cacheProtocol();
+
+        if (cachedProtocol instanceof I2cProtocol) {
+            // FIX #4: I2C → chunk-based READING (igual que startRead)
+            int sz = cachedProtocol.getTotalSize(cachedModelIndex);
+            if (sz > 65535) sz = 65535; // límite uint16_t del firmware
+            totalSize = sz;
+            currentAddress = 0;
+            readStream = new ByteArrayOutputStream();
+            state = ProtocolState.READING;
+
+            log("Volcado I2C (" + sz + " B en bloques de " + READ_CHUNK + " B)...");
+            hexHelper.showPopup("Volcado completo I2C...", sz);
+            updateUIState(true);
+            requestNextReadChunk();
+
+        } else {
+            // FIX #5: SPI → primero JEDEC para tamaño real
+            pendingFullDump = true;
+            state = ProtocolState.SCANNING_ID;
+            readStream = new ByteArrayOutputStream();
+            log("Detectando chip SPI via JEDEC antes del volcado...");
+            serialManager.sendData(new byte[]{0x50, 0x4A}); // JEDEC ID
+            resetTimeout(3000);
+            updateUIState(true);
+        }
+    }
+
+    /** Llamado tras recibir JEDEC cuando pendingFullDump=true. */
+    private void startFullDumpAfterJedec(byte mfr, byte memType, byte cap) {
+        int capVal = cap & 0xFF;
+        if (mfr == (byte) 0xFF || mfr == 0x00 || capVal < 0x10 || capVal > 0x1C) {
+            log(String.format("✗ JEDEC inválido (%02X %02X %02X). Verifica CS/SCK/MOSI/MISO.",
+                    mfr & 0xFF, memType & 0xFF, capVal));
+            state = ProtocolState.IDLE;
+            pendingFullDump = false;
+            updateUIState(serialManager.isConnected());
+            return;
+        }
+
+        // flash_size = 2^cap (mismo cálculo que el firmware PIC)
+        totalSize = 1 << capVal;
+        int sizeKB = totalSize / 1024;
+        log(String.format("Chip detectado: JEDEC %02X %02X %02X → %s KB",
+                mfr & 0xFF, memType & 0xFF, capVal,
+                sizeKB >= 1024 ? (sizeKB / 1024) + " MB (" + sizeKB + " KB)" : sizeKB + " KB"));
+
         state = ProtocolState.FULL_DUMPING;
         currentAddress = 0;
         readStream = new ByteArrayOutputStream();
+        pendingFullDump = false;
 
-        int model = spinnerModel.getSelectedItemPosition();
-        totalSize = getActiveProtocol().getTotalSize(model);
-
-        // Para SPI el PIC calcula el tamaño por JEDEC; totalSize es solo para la barra
-        if (getActiveProtocol() instanceof I2cProtocol && totalSize > 65535)
-            totalSize = 65535;
-
-        log("Volcado completo iniciado (" + totalSize + " bytes estimados)...");
-        hexHelper.showPopup("Volcado completo...", totalSize);
-
-        byte[] cmd = getActiveProtocol().buildFullDumpCommand(model);
-        serialManager.sendData(cmd);
-        updateUIState(true);
-        resetTimeout(15000);   // Timeout inicial; se renueva con cada paquete recibido
+        mainHandler.post(() -> {
+            hexHelper.showPopup("Volcado completo SPI (" + sizeKB + " KB)...", totalSize);
+            serialManager.sendData(new byte[]{0x50, 0x46}); // Full Auto Dump
+            resetTimeout(20000); // Timeout inicial; se renueva con cada paquete
+        });
     }
 
     // =========================================================================
@@ -484,21 +532,18 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
     // =========================================================================
 
     private void clearLog() {
-        if (logHelper != null) logHelper.clear();
-        log("Log limpiado.");
+        if (logHelper != null) { logHelper.clear(); log("Log limpiado."); }
     }
 
     private void saveBuffer() {
         try {
-            File romDir = FileManager.saveMemoryDump(eepromBuffer);
-            log("Guardado en " + romDir.getAbsolutePath());
+            File dir = FileManager.saveMemoryDump(eepromBuffer);
+            log("Guardado en " + dir.getAbsolutePath());
             Toast.makeText(this, "Guardado en Descargas/rom/", Toast.LENGTH_LONG).show();
         } catch (IllegalArgumentException e) {
-            log("Error: " + e.getMessage());
             Toast.makeText(this, "No hay datos para guardar", Toast.LENGTH_SHORT).show();
         } catch (java.io.IOException e) {
-            log("Error I/O: " + e.getMessage());
-            Toast.makeText(this, "Error guardando: " + e.getMessage(), Toast.LENGTH_LONG).show();
+            log("Error I/O guardando: " + e.getMessage());
         }
     }
 
@@ -506,27 +551,22 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
     // TIMEOUT
     // =========================================================================
 
-    private void resetTimeout(long millis) {
+    private void resetTimeout(long ms) {
         mainHandler.removeCallbacks(timeoutRunnable);
-        mainHandler.postDelayed(timeoutRunnable, millis);
+        mainHandler.postDelayed(timeoutRunnable, ms);
     }
 
-    private void cancelTimeout() {
-        mainHandler.removeCallbacks(timeoutRunnable);
-    }
+    private void cancelTimeout() { mainHandler.removeCallbacks(timeoutRunnable); }
 
     // =========================================================================
     // UI STATE
     // =========================================================================
 
     private void updateUIState(final boolean connected) {
-        // Siempre en hilo principal
         runOnUiThread(() -> {
             btnConnect.setEnabled(!connected);
             btnDisconnect.setEnabled(connected);
-
-            boolean busy = (state != ProtocolState.IDLE);
-
+            boolean busy = state != ProtocolState.IDLE;
             btnRead.setEnabled(connected && !busy);
             btnWrite.setEnabled(connected && !busy);
             btnErase.setEnabled(connected && !busy);
@@ -538,9 +578,8 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
             spinnerModel.setEnabled(!busy);
 
             if (connected) {
-                if (statusDot != null)
-                    statusDot.setBackgroundColor(
-                            androidx.core.content.ContextCompat.getColor(this, R.color.status_connected));
+                if (statusDot != null) statusDot.setBackgroundColor(
+                        androidx.core.content.ContextCompat.getColor(this, R.color.status_connected));
                 if (tvStatusLabel != null) {
                     tvStatusLabel.setText(R.string.status_connected);
                     tvStatusLabel.setTextColor(
@@ -549,9 +588,8 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
                 if (layoutStatus != null)
                     layoutStatus.setBackgroundColor(Color.parseColor("#112211"));
             } else {
-                if (statusDot != null)
-                    statusDot.setBackgroundColor(
-                            androidx.core.content.ContextCompat.getColor(this, R.color.status_disconnected));
+                if (statusDot != null) statusDot.setBackgroundColor(
+                        androidx.core.content.ContextCompat.getColor(this, R.color.status_disconnected));
                 if (tvStatusLabel != null) {
                     tvStatusLabel.setText(R.string.status_disconnected);
                     tvStatusLabel.setTextColor(
@@ -560,126 +598,161 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
                 if (layoutStatus != null)
                     layoutStatus.setBackgroundColor(Color.parseColor("#1A0A0A"));
                 state = ProtocolState.IDLE;
+                pendingFullDump = false;
                 cancelTimeout();
             }
         });
     }
 
     // =========================================================================
-    // USB SERIAL CALLBACKS  (todos en hilo de fondo — NO tocar UI directamente)
+    // USB SERIAL CALLBACKS
+    //
+    // ⚠ onSerialRead corre en el hilo de SerialInputOutputManager (fondo).
+    //   NO modificar vistas directamente — usar mainHandler.post() o
+    //   runOnUiThread(). Los métodos log() y hexHelper.renderXxx() ya
+    //   usan runOnUiThread internamente. finishRead/Write/Erase usan
+    //   mainHandler.post() para garantizar el hilo correcto.
     // =========================================================================
 
     @Override
     public void onSerialConnect() {
-        // Ping automático al conectar
+        cacheProtocol(); // Capturar en hilo UI antes del primer onSerialRead
         state = ProtocolState.PINGING;
         readStream = new ByteArrayOutputStream();
-        serialManager.sendData(getActiveProtocol().buildPingCommand());
+        serialManager.sendData(cachedProtocol.buildPingCommand()); // 0x3F
         resetTimeout(3000);
         updateUIState(true);
-        log("Puerto USB abierto. Enviando ping...");
+        log("Puerto USB abierto. Ping enviado...");
     }
 
     @Override
     public void onSerialConnectError(Exception e) {
         log("Error de conexión: " + e.getMessage());
-        runOnUiThread(() ->
-                Toast.makeText(this, "Error: " + e.getMessage(), Toast.LENGTH_LONG).show());
+        runOnUiThread(() -> Toast.makeText(this, "Error: " + e.getMessage(), Toast.LENGTH_LONG).show());
         updateUIState(false);
     }
 
     @Override
     public void onSerialRead(byte[] data) {
-        // ─── IMPORTANTE: este método corre en el hilo de SerialInputOutputManager.
-        // NO se deben tocar vistas directamente. Usar mainHandler.post() o
-        // runOnUiThread() para cualquier operación de UI.
-        // Los métodos log(), hexHelper.renderXxx(), hexHelper.updateProgress()
-        // ya usan runOnUiThread internamente.
-        // finishRead/Write/Erase usan mainHandler.post().
-        // ──────────────────────────────────────────────────────────────────────
+        if (data == null || data.length == 0) return;
 
         switch (state) {
 
-            // -----------------------------------------------------------------
+            // =================================================================
             // PING — espera "PICMEM v3 OK\r\n"
-            // -----------------------------------------------------------------
+            // =================================================================
             case PINGING: {
+                if (readStream == null) readStream = new ByteArrayOutputStream();
                 readStream.write(data, 0, data.length);
-                String incoming = new String(readStream.toByteArray(), StandardCharsets.UTF_8);
-                if (incoming.contains("PICMEM")) {
+                String s = new String(readStream.toByteArray(), StandardCharsets.UTF_8);
+                if (s.contains("PICMEM")) {
                     state = ProtocolState.IDLE;
                     cancelTimeout();
-                    log("✓ Firmware detectado: " +
-                            incoming.replace("\r", "").replace("\n", " ").trim());
+                    log("✓ Firmware: " + s.replace("\r", "").replace("\n", " ").trim());
                     runOnUiThread(() ->
-                            Toast.makeText(this, "PICMEM v3 Detectado", Toast.LENGTH_SHORT).show());
+                            Toast.makeText(this, "PICMEM Detectado", Toast.LENGTH_SHORT).show());
                     updateUIState(true);
                 }
                 break;
             }
 
-            // -----------------------------------------------------------------
-            // READING — lectura por chunks de READ_CHUNK_SIZE
-            // Protocolo por chunk: → cmd → [N bytes datos] → 0x55(RESP_END)
-            // -----------------------------------------------------------------
+            // =================================================================
+            // READING (chunk-based)
+            //
+            // FIX #1 (0x58 false RESP_ERR):
+            //   El PIC puede escribir en memoria datos con valor 0x58 ('X').
+            //   El código anterior trataba cualquier byte 0x58 como error,
+            //   abortando la lectura a mitad. Solución: 0x58 solo es RESP_ERR
+            //   si llega como el PRIMER byte del chunk (antes de cualquier dato).
+            //
+            // FIX #2 (0x55 false RESP_END):
+            //   Igualmente, 0x55 ('U') en memoria se confundía con RESP_END.
+            //   Solución: los primeros N bytes del chunk son siempre datos,
+            //   independientemente de su valor. Solo el byte N+1 puede ser
+            //   RESP_END.
+            //
+            // Protocolo por chunk:
+            //   → [cmd 8-9 B]
+            //   ← [N bytes de datos] [0x55 RESP_END]
+            //   N = min(READ_CHUNK, totalSize - currentAddress)
+            //   El byte 0x58 solo aparece SIN datos previos cuando hay error.
+            // =================================================================
             case READING: {
-                int expectedThisChunk = Math.min(READ_CHUNK_SIZE, totalSize - currentAddress);
+                if (readStream == null) break;
+
+                // Cuántos bytes del chunk actual llevamos acumulados
+                int expectedThisChunk = Math.min(READ_CHUNK, totalSize - currentAddress);
+                int chunkReceived     = readStream.size() - currentAddress;
 
                 for (byte b : data) {
                     int val = b & 0xFF;
 
-                    if (val == 0x58) { // RESP_ERR del PIC
+                    // FIX #1: 0x58 solo es error si es el primer byte del chunk
+                    if (chunkReceived == 0 && val == 0x58) {
                         state = ProtocolState.IDLE;
-                        log("✗ Error de lectura I2C/SPI (RESP_ERR).");
                         cancelTimeout();
+                        final int addr = currentAddress;
+                        log("✗ RESP_ERR en 0x" + Integer.toHexString(addr)
+                                + ". Verifica chip y conexiones.");
                         runOnUiThread(() -> {
+                            Toast.makeText(this, "Error leyendo en 0x"
+                                    + Integer.toHexString(addr), Toast.LENGTH_SHORT).show();
                             updateUIState(true);
                             hexHelper.dismiss();
                         });
                         return;
                     }
 
-                    // ¿Ya recibimos los N bytes del chunk? → el siguiente es RESP_END
-                    if (readStream.size() >= (currentAddress + expectedThisChunk)) {
-                        if (val == 0x55) { // RESP_END
+                    if (chunkReceived < expectedThisChunk) {
+                        // FIX #1 y #2: dentro del rango de datos, escribir
+                        // SIN filtrar por valor — 0x55 y 0x58 son datos válidos
+                        readStream.write(b);
+                        chunkReceived++;
+
+                    } else {
+                        // Ya recibimos todos los bytes del chunk →
+                        // FIX #2: ahora SÍ esperamos RESP_END (0x55)
+                        if (val == 0x55) {
                             currentAddress += expectedThisChunk;
                             final int prog = currentAddress;
                             runOnUiThread(() -> hexHelper.updateProgress(prog));
                             hexHelper.renderThrottled(readStream.toByteArray());
 
                             if (currentAddress >= totalSize) {
-                                finishRead();   // → mainHandler.post → hilo UI
+                                finishRead();
                             } else {
                                 requestNextReadChunk();
                             }
-                            return;
+                            return; // No procesar más bytes en esta llamada
+                        } else {
+                            // Byte inesperado después de los datos del chunk
+                            Log.w(TAG, "Byte inesperado 0x" + Integer.toHexString(val)
+                                    + " tras chunk, addr=0x" + Integer.toHexString(currentAddress));
                         }
-                        // 0x55 como dato antes de tiempo → escribir igualmente
                     }
-                    readStream.write(b);
                 }
-                resetTimeout(8000);
+                resetTimeout(10000);
                 break;
             }
 
-            // -----------------------------------------------------------------
-            // WRITING — chunk enviado; espera 0x4B (OK) para enviar el siguiente
-            // -----------------------------------------------------------------
+            // =================================================================
+            // WRITING — espera 0x4B (OK) por chunk para enviar el siguiente
+            // FIX #3: usa cachedPageSize capturado en hilo UI
+            // =================================================================
             case WRITING: {
                 for (byte b : data) {
                     if (b == 0x4B) { // RESP_OK
-                        int model        = spinnerModel.getSelectedItemPosition();
-                        int pageSize     = getActiveProtocol().getPageSize(model);
-                        int toNext       = pageSize - (currentAddress % pageSize);
-                        int chunkLimit   = Math.min(toNext, MAX_WRITE_CHUNK_SIZE);
-                        int expectedChunk = Math.min(chunkLimit, writeDataBuffer.length - currentAddress);
-
-                        currentAddress += expectedChunk;
+                        // FIX #3: NO llamar spinnerModel.getSelectedItemPosition()
+                        // desde este hilo de fondo
+                        int toNext   = cachedPageSize - (currentAddress % cachedPageSize);
+                        int limit    = Math.min(toNext, MAX_WRITE_CHUNK);
+                        int expected = Math.min(limit, writeDataBuffer.length - currentAddress);
+                        currentAddress += expected;
                         final int prog = currentAddress;
                         runOnUiThread(() -> hexHelper.updateProgress(prog));
 
                         if (currentAddress >= writeDataBuffer.length) {
-                            finishWrite();  // → mainHandler.post → hilo UI
+                            finishWrite();
                         } else {
                             sendNextWriteChunk();
                         }
@@ -687,8 +760,8 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
 
                     } else if (b == 0x58) { // RESP_ERR
                         state = ProtocolState.IDLE;
-                        log("✗ Error de escritura (NACK del dispositivo).");
                         cancelTimeout();
+                        log("✗ Error de escritura (NACK del dispositivo).");
                         runOnUiThread(() -> {
                             updateUIState(true);
                             hexHelper.dismiss();
@@ -696,22 +769,20 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
                         return;
                     }
                 }
-                resetTimeout(8000);
+                resetTimeout(10000);
                 break;
             }
 
-            // -----------------------------------------------------------------
+            // =================================================================
             // ERASING — espera 0x4B (OK) o 0x58 (ERR)
-            // -----------------------------------------------------------------
+            // =================================================================
             case ERASING: {
                 for (byte b : data) {
-                    if (b == 0x4B) {
-                        finishErase();  // → mainHandler.post → hilo UI
-                        return;
-                    } else if (b == 0x58) {
+                    if (b == 0x4B) { finishErase(); return; }
+                    if (b == 0x58) {
                         state = ProtocolState.IDLE;
-                        log("✗ Error durante el borrado (RESP_ERR).");
                         cancelTimeout();
+                        log("✗ Error Chip Erase (RESP_ERR).");
                         runOnUiThread(() -> {
                             Toast.makeText(this, "Error al borrar", Toast.LENGTH_SHORT).show();
                             updateUIState(true);
@@ -720,17 +791,23 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
                         return;
                     }
                 }
-                // Chip Erase puede tardar; renovar timeout mientras no llegue respuesta
-                resetTimeout(180000);
+                resetTimeout(300000); // Renovar timeout mientras el chip trabaja
                 break;
             }
 
-            // -----------------------------------------------------------------
-            // SCANNING_ID — I2C Scan (→ [addr]... 0xFF) o JEDEC (→ 3 bytes)
-            // -----------------------------------------------------------------
+            // =================================================================
+            // SCANNING_ID
+            // I2C Scan: → [addr7]... 0xFF
+            // SPI JEDEC: → [Mfr][Type][Cap]
+            //
+            // FIX #8: usar cachedProtocol (hilo UI), NO getActiveProtocol()
+            // FIX #5: si pendingFullDump, iniciar volcado con tamaño real
+            // =================================================================
             case SCANNING_ID: {
-                if (getActiveProtocol() instanceof I2cProtocol) {
-                    // I2C Scan: lista de dir. terminada en 0xFF
+                if (readStream == null) readStream = new ByteArrayOutputStream();
+
+                if (cachedProtocol instanceof I2cProtocol) {
+                    // I2C Scan: cada byte = dirección 7-bit; 0xFF = fin de lista
                     for (byte b : data) {
                         int val = b & 0xFF;
                         if (val == 0xFF) {
@@ -738,12 +815,9 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
                             cancelTimeout();
                             byte[] found = readStream.toByteArray();
                             StringBuilder sb = new StringBuilder("I2C Scan → ");
-                            if (found.length == 0) {
-                                sb.append("Sin dispositivos.");
-                            } else {
-                                for (byte addr : found)
-                                    sb.append(String.format("0x%02X ", addr & 0xFF));
-                            }
+                            if (found.length == 0) sb.append("Sin dispositivos.");
+                            else for (byte a : found)
+                                    sb.append(String.format("0x%02X ", a & 0xFF));
                             log(sb.toString());
                             updateUIState(true);
                             return;
@@ -751,40 +825,45 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
                         if (val != 0x55 && val != 0x58) readStream.write(b);
                     }
                 } else {
-                    // SPI JEDEC ID: 3 bytes [Mfr][MemType][Capacity]
+                    // SPI JEDEC ID: exactamente 3 bytes [Mfr][MemType][Cap]
                     readStream.write(data, 0, data.length);
-                    if (readStream.toByteArray().length >= 3) {
+                    byte[] j = readStream.toByteArray();
+                    if (j.length >= 3) {
                         state = ProtocolState.IDLE;
                         cancelTimeout();
-                        byte[] j = readStream.toByteArray();
-                        log(String.format("JEDEC ID: %02X %02X %02X",
-                                j[0] & 0xFF, j[1] & 0xFF, j[2] & 0xFF));
-                        updateUIState(true);
+
+                        if (pendingFullDump) {
+                            // FIX #5: iniciar Full Dump con tamaño real
+                            startFullDumpAfterJedec(j[0], j[1], j[2]);
+                        } else {
+                            log(String.format("JEDEC ID: %02X %02X %02X",
+                                    j[0] & 0xFF, j[1] & 0xFF, j[2] & 0xFF));
+                            updateUIState(true);
+                        }
                     }
                 }
                 break;
             }
 
-            // -----------------------------------------------------------------
+            // =================================================================
             // FULL_DUMPING
-            // I2C: 49 46 → [N bytes exactos] → 0x55
-            // SPI: 50 46 → (JEDEC auto) → [M bytes] → 0x55
             //
-            // ESTRATEGIA:
-            //   • Escribir todos los bytes hasta totalSize.
-            //   • Después de totalSize bytes, el siguiente 0x55 es RESP_END.
-            //   • Un 0x58 en cualquier momento = error.
-            // -----------------------------------------------------------------
+            // Con FIX #5 aplicado, totalSize = 2^jedec_cap (igual que el PIC).
+            // Los primeros totalSize bytes son siempre DATOS.
+            // El byte 0x55 que llega DESPUÉS de totalSize bytes es RESP_END.
+            // El byte 0x58 como primer byte es RESP_ERR (chip no detectado).
+            // =================================================================
             case FULL_DUMPING: {
+                if (readStream == null) break;
+
                 for (byte b : data) {
                     int val = b & 0xFF;
 
-                    // Error del PIC
+                    // 0x58 solo es error si llega antes de cualquier dato
                     if (val == 0x58 && readStream.size() == 0) {
-                        // Solo tratar como error si llega inmediatamente (chip no detectado)
                         state = ProtocolState.IDLE;
-                        log("✗ Error Full Dump (RESP_ERR). Verifica chip y selección de modelo.");
                         cancelTimeout();
+                        log("✗ Full Dump abortado: chip no detectado o JEDEC inválido.");
                         runOnUiThread(() -> {
                             updateUIState(true);
                             hexHelper.dismiss();
@@ -792,43 +871,41 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
                         return;
                     }
 
-                    // RESP_END: llega DESPUÉS de que hayamos recibido todos los datos
+                    // RESP_END: solo después de totalSize bytes exactos
                     if (val == 0x55 && readStream.size() >= totalSize) {
-                        finishRead();   // → mainHandler.post → hilo UI
+                        finishRead();
                         return;
                     }
 
-                    // Guardar byte de datos (límite por totalSize para seguridad)
+                    // Acumular datos (guardia de totalSize para seguridad)
                     if (readStream.size() < totalSize) {
                         readStream.write(b);
-
-                        // Actualizar progreso en UI cada 256 bytes
                         int sz = readStream.size();
+
+                        // Actualizar barra cada 256 bytes
                         if ((sz & 0xFF) == 0) {
                             final int prog = sz;
                             runOnUiThread(() -> hexHelper.updateProgress(prog));
                         }
-                        // Actualizar visor hex cada 2 KB
-                        if ((sz & 0x7FF) == 0) {
+                        // Actualizar hex viewer cada 4 KB
+                        if ((sz & 0xFFF) == 0) {
                             hexHelper.renderThrottled(readStream.toByteArray());
                         }
                     }
                 }
-                // Datos recibidos → renovar timeout (5 s desde el último paquete)
-                resetTimeout(5000);
+                resetTimeout(5000); // Renovar timeout mientras llegan datos
                 break;
             }
 
-            default:
-                break;
+            default: break;
         }
     }
 
     @Override
     public void onSerialIoError(Exception e) {
-        // Llamado desde hilo de SerialInputOutputManager — usar runOnUiThread
         Log.e(TAG, "onSerialIoError", e);
         state = ProtocolState.IDLE;
+        pendingFullDump = false;
         cancelTimeout();
         log("Error I/O serial: " + e.getMessage());
         runOnUiThread(() -> {
@@ -841,6 +918,7 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
     @Override
     public void onSerialDisconnect() {
         state = ProtocolState.IDLE;
+        pendingFullDump = false;
         cancelTimeout();
         log("Dispositivo desconectado.");
         runOnUiThread(() -> {
@@ -854,48 +932,31 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
     // MENÚ
     // =========================================================================
 
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        getMenuInflater().inflate(R.menu.main_menu, menu);
-        return true;
-    }
+    @Override public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.main_menu, menu); return true; }
 
-    @Override
-    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
+    @Override public boolean onOptionsItemSelected(@NonNull MenuItem item) {
         int id = item.getItemId();
-        if (id == R.id.action_about) {
-            showAboutDialog();
-            return true;
-        } else if (id == R.id.action_pinout_pic) {
-            openHardwareInfo(0);
-            return true;
-        } else if (id == R.id.action_i2c_conn) {
-            openHardwareInfo(1);
-            return true;
-        } else if (id == R.id.action_spi_conn) {
-            openHardwareInfo(2);
-            return true;
-        }
+        if (id == R.id.action_about)     { showAboutDialog();   return true; }
+        if (id == R.id.action_pinout_pic){ openHardwareInfo(0); return true; }
+        if (id == R.id.action_i2c_conn)  { openHardwareInfo(1); return true; }
+        if (id == R.id.action_spi_conn)  { openHardwareInfo(2); return true; }
         return super.onOptionsItemSelected(item);
     }
 
     private void showAboutDialog() {
-        new AlertDialog.Builder(this)
-                .setTitle(R.string.about_title)
+        new AlertDialog.Builder(this).setTitle(R.string.about_title)
                 .setMessage(R.string.about_message)
-                .setPositiveButton(android.R.string.ok, null)
-                .show();
+                .setPositiveButton(android.R.string.ok, null).show();
     }
 
     private void openHardwareInfo(int type) {
-        Intent intent = new Intent(this,
-                com.mobincube.pronosticos_parley_copy.sc_55UCEB.ui.HardwareInfoActivity.class);
-        intent.putExtra("type", type);
-        startActivity(intent);
+        startActivity(new Intent(this,
+                com.mobincube.pronosticos_parley_copy.sc_55UCEB.ui.HardwareInfoActivity.class)
+                .putExtra("type", type));
     }
 
-    @Override
-    protected void onDestroy() {
+    @Override protected void onDestroy() {
         super.onDestroy();
         serialManager.cleanup();
         mainHandler.removeCallbacksAndMessages(null);
