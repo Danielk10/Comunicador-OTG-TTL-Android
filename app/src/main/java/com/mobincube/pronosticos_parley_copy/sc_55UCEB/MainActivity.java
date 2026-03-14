@@ -241,11 +241,10 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
 
         log("Iniciando lectura de " + totalSize + " bytes...");
 
+        hexHelper.showPopup("Leyendo EEPROM...", totalSize);
         progressBar.setMax(totalSize);
         progressBar.setProgress(0);
         progressBar.setVisibility(View.VISIBLE);
-        hexHelper.setText("Dirección | 00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F | ASCII\n" +
-                "------------------------------------------------------------------\nLeyendo...");
 
         updateUIState(true);
         requestNextReadChunk();
@@ -277,6 +276,7 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
         Toast.makeText(this, "Lectura completada", Toast.LENGTH_SHORT).show();
         updateUIState(true);
         hexHelper.renderNow(eepromBuffer);
+        hexHelper.updateProgress(totalSize);
     }
 
     // =========================================================================
@@ -346,10 +346,11 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
             log("Iniciando escritura de " + writeDataBuffer.length + " bytes en memoria...");
             state = ProtocolState.WRITING;
             currentAddress = 0;
+            
+            hexHelper.showPopup("Escribiendo Memoria...", writeDataBuffer.length);
             progressBar.setMax(writeDataBuffer.length);
             progressBar.setProgress(0);
             progressBar.setVisibility(View.VISIBLE);
-            hexHelper.setText("Escribiendo...");
 
             updateUIState(true);
             sendNextWriteChunk();
@@ -394,8 +395,9 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
         taskHandler.removeCallbacks(timeoutRunnable);
         log("Escritura completada exitosamente.");
         Toast.makeText(this, "Escritura completada", Toast.LENGTH_SHORT).show();
-        hexHelper.setText("Escritura finalizada con éxito.");
         updateUIState(true);
+        hexHelper.updateProgress(writeDataBuffer.length);
+        hexHelper.renderNow(writeDataBuffer);
     }
 
     // =========================================================================
@@ -416,9 +418,12 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
             java.util.Arrays.fill(writeDataBuffer, (byte) 0xFF);
             state = ProtocolState.WRITING;
             currentAddress = 0;
+            
+            hexHelper.showPopup("Borrando I2C (0xFF)...", totalSize);
             progressBar.setMax(totalSize);
             progressBar.setProgress(0);
             progressBar.setVisibility(View.VISIBLE);
+            
             updateUIState(true);
             sendNextWriteChunk();
         } else {
@@ -426,6 +431,8 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
             log("Iniciando borrado de chip SPI...");
             state = ProtocolState.ERASING;
             serialManager.sendData(cmd);
+            
+            hexHelper.showPopup("Borrando Chip SPI...", 100);
             progressBar.setIndeterminate(true);
             progressBar.setVisibility(View.VISIBLE);
             updateUIState(true);
@@ -440,8 +447,8 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
         taskHandler.removeCallbacks(timeoutRunnable);
         log("Borrado completado exitosamente.");
         Toast.makeText(this, "Borrado completado", Toast.LENGTH_SHORT).show();
-        hexHelper.setText("Memoria borrada.");
         updateUIState(serialManager.isConnected());
+        hexHelper.dismiss();
     }
 
     // =========================================================================
@@ -498,10 +505,10 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
         }
         
         log("Iniciando Volcado Completo Automático...");
+        hexHelper.showPopup("Volcado Completo...", totalSize);
         progressBar.setMax(totalSize);
         progressBar.setProgress(0);
         progressBar.setVisibility(View.VISIBLE);
-        hexHelper.setText("Recibiendo flujo continuo de datos...");
 
         byte[] cmd = getActiveProtocol().buildFullDumpCommand(model);
         serialManager.sendData(cmd);
@@ -646,6 +653,7 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
                         runOnUiThread(() -> {
                             progressBar.setVisibility(View.GONE);
                             updateUIState(true);
+                            hexHelper.dismiss();
                         });
                         return;
                     }
@@ -655,7 +663,10 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
                         if (val == 0x55) { // RESP_END
                             currentAddress += expectedForThisChunk;
                             final int progress = currentAddress;
-                            runOnUiThread(() -> progressBar.setProgress(progress));
+                            runOnUiThread(() -> {
+                                progressBar.setProgress(progress);
+                                hexHelper.updateProgress(progress);
+                            });
                             
                             if (currentAddress >= totalSize) {
                                 finishRead();
@@ -689,7 +700,10 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
 
                     currentAddress += expectedForThisChunk;
                     final int progress = currentAddress;
-                    runOnUiThread(() -> progressBar.setProgress(progress));
+                    runOnUiThread(() -> {
+                        progressBar.setProgress(progress);
+                        hexHelper.updateProgress(progress);
+                    });
                     sendNextWriteChunk();
                     break;
                 } else if (b == 0x58) { // RESP_ERR
@@ -698,6 +712,7 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
                     runOnUiThread(() -> {
                         progressBar.setVisibility(View.GONE);
                         updateUIState(true);
+                        hexHelper.dismiss();
                     });
                 }
             }
@@ -713,6 +728,7 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
                         progressBar.setIndeterminate(false);
                         log("Error durante el borrado (RESP_ERR).");
                         Toast.makeText(MainActivity.this, "Error al borrar", Toast.LENGTH_SHORT).show();
+                        hexHelper.dismiss();
                     });
                     updateUIState(true);
                 }
@@ -777,6 +793,7 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
                     runOnUiThread(() -> {
                         progressBar.setVisibility(View.GONE);
                         updateUIState(true);
+                        hexHelper.dismiss();
                     });
                     return;
                 }
@@ -788,7 +805,10 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
                     readStream.write(b);
                     if (readStream.size() % 128 == 0) {
                         final int progress = readStream.size();
-                        runOnUiThread(() -> progressBar.setProgress(progress));
+                        runOnUiThread(() -> {
+                            progressBar.setProgress(progress);
+                            hexHelper.updateProgress(progress);
+                        });
                         updateUi = true;
                     }
                 }
