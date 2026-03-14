@@ -44,7 +44,7 @@ public class DiagramView extends View {
             graficos = new Graficos2D(textura);
         }
 
-        graficos.limpiar(Color.parseColor("#0D1117")); // Fondo oscuro profesional
+        graficos.limpiar(Color.parseColor("#F8F9FA")); // Tema claro profesional
         
         switch (type) {
             case 0:
@@ -66,7 +66,7 @@ public class DiagramView extends View {
         float centerX = g.getAncho() / 2;
         float centerY = g.getAlto() / 2;
         
-        int colorText = Color.parseColor("#E6EDF3");
+        int colorText = Color.parseColor("#24292F");
         g.getLapiz().setTextSize(26);
         g.dibujarTexto("PINOUT PIC 16F628A (DIP-18)", centerX - 180, 60, colorText);
         
@@ -91,13 +91,15 @@ public class DiagramView extends View {
         
         int colorChip = Color.parseColor("#161B22");
         int colorPin = Color.parseColor("#8B949E");
-        int colorText = Color.parseColor("#E6EDF3");
-        int colorLabel = Color.parseColor("#79C0FF");
+        int colorText = Color.parseColor("#24292F");
+        int colorLabel = Color.parseColor("#0969DA");
         
+        // Sombra suave
+        g.dibujarRectangulo(x - chipW/2 + 5, startY + 5, chipW, chipH, Color.LTGRAY);
         // Cuerpo del chip (negro)
         g.dibujarRectangulo(x - chipW/2, startY, chipW, chipH, colorChip);
         // Notch
-        g.dibujarRectangulo(x - 20, startY, 40, 15, Color.parseColor("#0D1117"));
+        g.dibujarRectangulo(x - 20, startY, 40, 15, Color.BLACK);
         
         g.getLapiz().setTextSize(18);
         for (int i = 0; i < halfPins; i++) {
@@ -119,27 +121,68 @@ public class DiagramView extends View {
         g.dibujarTexto(label, x - 50, y + chipH/2 + 25, colorLabel);
     }
 
+    private void dibujarAdaptadorTTL(Graficos g, float x, float y) {
+        float w = 180;
+        float h = 100;
+        int colorBody = Color.parseColor("#0366D6");
+        int colorText = Color.WHITE;
+        
+        // Cuerpo adaptador
+        g.dibujarRectangulo(x - w/2, y - h/2, w, h, colorBody);
+        g.dibujarRectangulo(x - w/2 - 30, y - 20, 30, 40, Color.BLACK); // Conector USB
+        
+        g.getLapiz().setTextSize(18);
+        g.dibujarTexto("USB-TTL", x - 40, y + 10, colorText);
+        
+        // Pines de salida
+        float py = y - h/2 + 25;
+        g.getLapiz().setTextSize(14);
+        g.dibujarTexto("VCC", x + w/2 + 10, py, Color.RED);
+        g.dibujarTexto("TX", x + w/2 + 10, py + 25, Color.BLACK);
+        g.dibujarTexto("RX", x + w/2 + 10, py + 50, Color.BLACK);
+        g.dibujarTexto("GND", x + w/2 + 10, py + 75, Color.BLACK);
+    }
+
     private void dibujarI2C(Graficos g) {
         float w = g.getAncho();
         float centerX = w / 2;
         
-        int colorText = Color.parseColor("#E6EDF3");
-        int colorWire = Color.parseColor("#79C0FF");
-        int colorPower = Color.parseColor("#FF7B72");
-        int colorGND = Color.parseColor("#8B949E");
-        int colorResistor = Color.parseColor("#FFA657");
+        int colorText = Color.parseColor("#24292F");
+        int colorWire = Color.parseColor("#0969DA");
+        int colorPower = Color.RED;
+        int colorGND = Color.BLACK;
+        int colorResistor = Color.parseColor("#AF7E00");
+        int colorAlert = Color.parseColor("#9A6700");
 
         g.getLapiz().setTextSize(26);
-        g.dibujarTexto("CIRCUITO REAL I2C (EEPROM 24xx)", centerX - 180, 60, colorText);
+        g.dibujarTexto("DIAGRAMA DE CONEXIÓN I2C", centerX - 180, 60, colorText);
         
-        float picX = 180;
-        float memX = w - 150;
-        float chipsY = 400;
+        float adapterX = 120;
+        float adapterY = 150;
+        float picX = 220;
+        float memX = w - 180;
+        float chipsY = 450;
 
+        // Componentes
+        dibujarAdaptadorTTL(g, adapterX, adapterY);
         dibujarChipDIP(g, picX, chipsY, 18, "PIC 16F628A", null, null);
         dibujarChipDIP(g, memX, chipsY, 8, "EEPROM 24xx", null, null);
-        
+
+        // Instrucciones en pantalla
+        g.getLapiz().setTextSize(18);
+        g.dibujarTexto("1. Conectar USB-TTL: TX -> P7 (RX), RX -> P8 (TX)", 50, 250, colorText);
+        g.dibujarTexto("2. I2C SDA: P17 (PIC) -> P5 (MEM)", 50, 280, colorText);
+        g.dibujarTexto("3. I2C SCL: P18 (PIC) -> P6 (MEM)", 50, 310, colorText);
+        g.dibujarTexto("⚠ Pull-ups 4.7k requeridas en SDA y SCL", 50, 340, colorAlert);
+
         // Coordenadas calculadas para pines
+        float adapterVCC_X = adapterX + 90 + 10;
+        float adapterVCC_Y = adapterY - 50 + 25;
+        float adapterTX_Y = adapterY - 50 + 50;
+        float adapterRX_Y = adapterY - 50 + 75;
+        float adapterGND_X = adapterX + 90 + 10;
+        float adapterGND_Y = adapterY - 50 + 100;
+
         float picR_X = picX + 70 + 20;
         float picL_X = picX - 70 - 20;
         float memR_X = memX + 70 + 20;
@@ -152,6 +195,8 @@ public class DiagramView extends View {
         float picP14y = chipsY - (18 * 45 / 4) + 35 + (4 * 45); // Pin 14 (VDD)
         // Left side (1, 2, 3, 4, 5, 6, 7, 8, 9)
         float picP5y = chipsY - (18 * 45 / 4) + 35 + (4 * 45); // Pin 5 (VSS/GND)
+        float picP7y = chipsY - (18 * 45 / 4) + 35 + (6 * 45); // Pin 7 (RB1/RX)
+        float picP8y = chipsY - (18 * 45 / 4) + 35 + (7 * 45); // Pin 8 (RB2/TX)
         
         // EEPROM 24xx (DIP-8)
         // Right side (8, 7, 6, 5)
@@ -161,13 +206,38 @@ public class DiagramView extends View {
         // Left side (1, 2, 3, 4)
         float memP4y = chipsY - (8 * 45 / 4) + 35 + (3 * 45); // Pin 4 (VSS/GND)
 
-        // SDA: PIC P17 -> MEM P5
+        // Conexiones Adaptador -> PIC
+        // VCC
+        g.dibujarLinea(adapterVCC_X, adapterVCC_Y, adapterVCC_X + 50, adapterVCC_Y, colorPower);
+        g.dibujarLinea(adapterVCC_X + 50, adapterVCC_Y, adapterVCC_X + 50, picP14y, colorPower);
+        g.dibujarLinea(adapterVCC_X + 50, picP14y, picR_X, picP14y, colorPower);
+        g.dibujarTexto("VCC", adapterVCC_X + 60, adapterVCC_Y - 10, colorPower);
+
+        // GND
+        g.dibujarLinea(adapterGND_X, adapterGND_Y, adapterGND_X + 50, adapterGND_Y, colorGND);
+        g.dibujarLinea(adapterGND_X + 50, adapterGND_Y, adapterGND_X + 50, picP5y, colorGND);
+        g.dibujarLinea(adapterGND_X + 50, picP5y, picL_X, picP5y, colorGND);
+        g.dibujarTexto("GND", adapterGND_X + 60, adapterGND_Y + 10, colorGND);
+
+        // TX (Adapter) -> RX (PIC P7)
+        g.dibujarLinea(adapterVCC_X, adapterTX_Y, picL_X - 30, adapterTX_Y, Color.BLACK);
+        g.dibujarLinea(picL_X - 30, adapterTX_Y, picL_X - 30, picP7y, Color.BLACK);
+        g.dibujarLinea(picL_X - 30, picP7y, picL_X, picP7y, Color.BLACK);
+        g.dibujarTexto("TX", adapterVCC_X + 10, adapterTX_Y - 10, Color.BLACK);
+
+        // RX (Adapter) -> TX (PIC P8)
+        g.dibujarLinea(adapterVCC_X, adapterRX_Y, picL_X - 10, adapterRX_Y, Color.BLACK);
+        g.dibujarLinea(picL_X - 10, adapterRX_Y, picL_X - 10, picP8y, Color.BLACK);
+        g.dibujarLinea(picL_X - 10, picP8y, picL_X, picP8y, Color.BLACK);
+        g.dibujarTexto("RX", adapterVCC_X + 10, adapterRX_Y - 10, Color.BLACK);
+
+        // I2C SDA: PIC P17 -> MEM P5
         g.dibujarLinea(picR_X, picP17y, memR_X - 15, picP17y, colorWire);
         g.dibujarLinea(memR_X - 15, picP17y, memR_X - 15, memP5y, colorWire);
         g.dibujarLinea(memR_X - 15, memP5y, memR_X, memP5y, colorWire);
         g.dibujarTexto("SDA", centerX - 20, picP17y - 5, colorWire);
         
-        // SCL: PIC P18 -> MEM P6
+        // I2C SCL: PIC P18 -> MEM P6
         g.dibujarLinea(picR_X, picP18y, memR_X - 35, picP18y, colorWire);
         g.dibujarLinea(memR_X - 35, picP18y, memR_X - 35, memP6y, colorWire);
         g.dibujarLinea(memR_X - 35, memP6y, memR_X, memP6y, colorWire);
@@ -175,50 +245,59 @@ public class DiagramView extends View {
         
         // PULL-UPS
         // SDA Pull-up
-        g.dibujarRectangulo(centerX - 10, picP17y - 40, 20, 10, colorResistor);
-        g.dibujarLinea(centerX, picP17y, centerX, picP17y - 30, colorResistor);
-        g.dibujarLinea(centerX, picP17y - 50, centerX, picP17y - 70, colorPower); // To VCC
-        g.dibujarTexto("4.7k", centerX + 15, picP17y - 35, colorResistor);
+        g.dibujarRectangulo(centerX - 10, picP17y - 50, 40, 15, colorResistor); // Resistor symbol
+        g.dibujarLinea(centerX + 10, picP17y, centerX + 10, picP17y - 40, colorWire);
+        g.dibujarLinea(centerX + 10, picP17y - 65, centerX + 10, adapterVCC_Y, colorPower); // To VCC bus
+        g.dibujarTexto("4.7k", centerX + 55, picP17y - 45, colorResistor);
         
         // SCL Pull-up
-        g.dibujarRectangulo(centerX - 30, picP18y - 40, 20, 10, colorResistor);
-        g.dibujarLinea(centerX - 20, picP18y, centerX - 20, picP18y - 30, colorResistor);
-        g.dibujarLinea(centerX - 20, picP18y - 50, centerX - 20, picP18y - 70, colorPower); // To VCC
+        g.dibujarRectangulo(centerX - 30, picP18y - 50, 40, 15, colorResistor); // Resistor symbol
+        g.dibujarLinea(centerX - 10, picP18y, centerX - 10, picP18y - 40, colorWire);
+        g.dibujarLinea(centerX - 10, picP18y - 65, centerX - 10, adapterVCC_Y, colorPower); // To VCC bus
 
-        // VCC connections
-        g.dibujarLinea(picR_X, picP14y, picR_X + 50, picP14y, colorPower);
-        g.dibujarLinea(picR_X + 50, picP14y, picR_X + 50, memP8y, colorPower);
-        g.dibujarLinea(picR_X + 50, memP8y, memR_X, memP8y, colorPower);
-        g.dibujarLinea(picR_X + 50, picP14y, picR_X + 50, picP17y - 70, colorPower); // Connect pull-ups to VCC
-        g.dibujarTexto("VCC", picR_X + 60, picP14y, colorPower);
-
-        // GND connections
-        g.dibujarLinea(picL_X, picP5y, picL_X - 50, picP5y, colorGND);
-        g.dibujarLinea(picL_X - 50, picP5y, picL_X - 50, memP4y, colorGND);
-        g.dibujarLinea(picL_X - 50, memP4y, memL_X, memP4y, colorGND);
-        g.dibujarTexto("GND", picL_X - 60, picP5y, colorGND);
+        // VCC bus to EEPROM
+        g.dibujarLinea(adapterVCC_X + 50, picP14y, adapterVCC_X + 50, memP8y, colorPower);
+        g.dibujarLinea(adapterVCC_X + 50, memP8y, memR_X, memP8y, colorPower);
+        
+        // GND bus to EEPROM
+        g.dibujarLinea(adapterGND_X + 50, picP5y, adapterGND_X + 50, memP4y, colorGND);
+        g.dibujarLinea(adapterGND_X + 50, memP4y, memL_X, memP4y, colorGND);
     }
 
     private void dibujarSPI(Graficos g) {
         float w = g.getAncho();
         float centerX = w / 2;
         
-        int colorText = Color.parseColor("#E6EDF3");
-        int colorWire = Color.parseColor("#D2A8FF");
-        int colorPower = Color.parseColor("#FF7B72");
-        int colorGND = Color.parseColor("#8B949E");
-        int colorAlert = Color.parseColor("#F85149");
+        int colorText = Color.parseColor("#24292F");
+        int colorWire = Color.parseColor("#8250DF");
+        int colorPower = Color.RED;
+        int colorGND = Color.BLACK;
+        int colorAlert = Color.RED;
 
         g.getLapiz().setTextSize(26);
-        g.dibujarTexto("CIRCUITO REAL SPI (EEPROM 25xx)", centerX - 180, 60, colorText);
+        g.dibujarTexto("DIAGRAMA DE CONEXIÓN SPI", centerX - 180, 60, colorText);
         
-        float picX = 180;
-        float memX = w - 150;
-        float chipsY = 400;
+        float adapterX = 120;
+        float adapterY = 150;
+        float picX = 220;
+        float memX = w - 180;
+        float chipsY = 500;
 
+        dibujarAdaptadorTTL(g, adapterX, adapterY);
         dibujarChipDIP(g, picX, chipsY, 18, "PIC 16F628A", null, null);
         dibujarChipDIP(g, memX, chipsY, 8, "EEPROM 25xx", null, null);
-        
+
+        g.getLapiz().setTextSize(18);
+        g.dibujarTexto("Conexiones SPI Directas:", 50, 280, colorText);
+        g.dibujarTexto("- P1 (CS), P2 (SCK), P4 (MISO), P15 (MOSI)", 50, 310, colorText);
+        g.dibujarTexto("⚠ WP(3) y HOLD(7) -> VCC", 50, 340, colorAlert);
+
+        // Coordenadas calculadas para pines
+        float adapterVCC_X = adapterX + 90 + 10;
+        float adapterVCC_Y = adapterY - 50 + 25;
+        float adapterGND_X = adapterX + 90 + 10;
+        float adapterGND_Y = adapterY - 50 + 100;
+
         float picR_X = picX + 70 + 20;
         float picL_X = picX - 70 - 20;
         float memR_X = memX + 70 + 20;
@@ -246,6 +325,19 @@ public class DiagramView extends View {
         float memP6y = chipsY - (8 * 45 / 4) + 35 + (2 * 45); // Pin 6 (SCK)
         float memP5y = chipsY - (8 * 45 / 4) + 35 + (3 * 45); // Pin 5 (MOSI/SI)
 
+        // Conexiones Adaptador -> PIC (VCC, GND)
+        // VCC
+        g.dibujarLinea(adapterVCC_X, adapterVCC_Y, adapterVCC_X + 50, adapterVCC_Y, colorPower);
+        g.dibujarLinea(adapterVCC_X + 50, adapterVCC_Y, adapterVCC_X + 50, picP14y, colorPower);
+        g.dibujarLinea(adapterVCC_X + 50, picP14y, picR_X, picP14y, colorPower);
+        g.dibujarTexto("VCC", adapterVCC_X + 60, adapterVCC_Y - 10, colorPower);
+
+        // GND
+        g.dibujarLinea(adapterGND_X, adapterGND_Y, adapterGND_X + 50, adapterGND_Y, colorGND);
+        g.dibujarLinea(adapterGND_X + 50, adapterGND_Y, adapterGND_X + 50, picP5y, colorGND);
+        g.dibujarLinea(adapterGND_X + 50, picP5y, picL_X, picP5y, colorGND);
+        g.dibujarTexto("GND", adapterGND_X + 60, adapterGND_Y + 10, colorGND);
+
         // CS: PIC P1 -> MEM P1
         g.dibujarLinea(picL_X, picP1y, 50, picP1y, colorWire);
         g.dibujarLinea(50, picP1y, 50, memP1y, colorWire);
@@ -272,17 +364,13 @@ public class DiagramView extends View {
         g.dibujarLinea(w - 30, memP6y, memR_X, memP6y, colorWire);
         g.dibujarTexto("SCK", centerX, 695, colorWire);
 
-        // VCC connections
-        g.dibujarLinea(picR_X, picP14y, picR_X + 50, picP14y, colorPower);
-        g.dibujarLinea(picR_X + 50, picP14y, picR_X + 50, memP8y, colorPower);
-        g.dibujarLinea(picR_X + 50, memP8y, memR_X, memP8y, colorPower);
-        g.dibujarTexto("VCC", picR_X + 60, picP14y, colorPower);
+        // VCC bus to EEPROM
+        g.dibujarLinea(adapterVCC_X + 50, picP14y, adapterVCC_X + 50, memP8y, colorPower);
+        g.dibujarLinea(adapterVCC_X + 50, memP8y, memR_X, memP8y, colorPower);
 
-        // GND connections
-        g.dibujarLinea(picL_X, picP5y, picL_X - 50, picP5y, colorGND);
-        g.dibujarLinea(picL_X - 50, picP5y, picL_X - 50, memP4y, colorGND);
-        g.dibujarLinea(picL_X - 50, memP4y, memL_X, memP4y, colorGND);
-        g.dibujarTexto("GND", picL_X - 60, picP5y, colorGND);
+        // GND bus to EEPROM
+        g.dibujarLinea(adapterGND_X + 50, picP5y, adapterGND_X + 50, memP4y, colorGND);
+        g.dibujarLinea(adapterGND_X + 50, memP4y, memL_X, memP4y, colorGND);
 
         // WP and HOLD to VCC
         g.dibujarLinea(memL_X, memP3y, memL_X - 20, memP3y, colorAlert);
@@ -290,7 +378,7 @@ public class DiagramView extends View {
         g.dibujarLinea(memL_X - 20, memP8y - 50, memR_X - 20, memP8y - 50, colorAlert);
         g.dibujarLinea(memR_X - 20, memP8y - 50, memR_X - 20, memP7y, colorAlert);
         g.dibujarLinea(memR_X - 20, memP7y, memR_X, memP7y, colorAlert);
-        g.dibujarLinea(memR_X - 20, memP8y - 50, memR_X, memP8y - 50, colorAlert); // Connect to VCC line
+        g.dibujarLinea(memR_X - 20, memP8y - 50, adapterVCC_X + 50, memP8y - 50, colorAlert); // Connect to VCC bus
         g.dibujarTexto("WP (P3) y HOLD (P7) a VCC", centerX - 100, 780, colorAlert);
     }
 }
