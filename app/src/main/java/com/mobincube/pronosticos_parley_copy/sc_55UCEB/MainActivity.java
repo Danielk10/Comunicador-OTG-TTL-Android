@@ -703,16 +703,19 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
             }
         } else if (state == ProtocolState.SCANNING_ID) {
             if (getActiveProtocol() instanceof I2cProtocol) {
-                // I2C Scan: Lista de direcciones encontradas terminada en 0xFF (pero el protocolo v3 dice que envía un Dump corto)
-                // Revisando firmware: devuelve bytes de direcciones encontradas y finaliza con RESP_OK
+                // I2C Scan: Lista de direcciones encontradas terminada en 0xFF
                 StringBuilder sb = new StringBuilder("Dispositivos I2C encontrados: ");
                 for (byte b : data) {
-                    if (b == 0x4B) { // RESP_OK
+                    if ((b & 0xFF) == 0xFF) { // Fin de lista (0xFF)
                         state = ProtocolState.IDLE;
                         taskHandler.removeCallbacks(timeoutRunnable);
-                        log(sb.toString());
+                        if (readStream != null && readStream.size() > 0) {
+                            log("Escaneo finalizado.");
+                        } else {
+                            log(sb.toString());
+                        }
                         break;
-                    } else if (b != 0x55) { // Evitar RESP_END si aparece
+                    } else if ((b & 0xFF) != 0x55) { // Evitar RESP_END si aparece
                         sb.append(String.format("0x%02X ", b));
                     }
                 }
