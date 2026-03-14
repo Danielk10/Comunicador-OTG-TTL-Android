@@ -78,16 +78,14 @@ public class SpiProtocol implements EepromProtocol {
     @Override
     public String getHardwareInstructions() {
         return "Conexiones SPI (25Cxx):\n" +
-                "• PIC RA2  → EEPROM CS   (Pin 1)\n" +
-                "• PIC RA5  → EEPROM MISO (Pin 2)\n" +
-                "• PIC RA6  → EEPROM MOSI (Pin 5)\n" +
-                "• PIC RA3  → EEPROM SCK  (Pin 6)\n" +
-                "• PIC GND  → EEPROM GND  (Pin 4)\n" +
-                "• PIC VCC  → EEPROM VCC  (Pin 8)\n\n" +
+                "• PIC RA2 (Pin 1)  → EEPROM CS   (Pin 1)\n" +
+                "• PIC RA3 (Pin 2)  → EEPROM SCK  (Pin 6)\n" +
+                "• PIC RA5 (Pin 4)  → EEPROM MISO (Pin 2)\n" +
+                "• PIC RA6 (Pin 15) → EEPROM MOSI (Pin 5)\n" +
+                "• PIC GND (Pin 5)  → EEPROM GND  (Pin 4)\n" +
+                "• PIC VDD (Pin 14) → EEPROM VCC  (Pin 8)\n\n" +
                 "⚠ EXIGENCIAS DE HARDWARE:\n" +
-                "- No requiere Pull-Ups en líneas de datos.\n" +
-                "- WP / Write Protect (Pin 3) → Conectar a VCC.\n" +
-                "- HOLD (Pin 7) → Conectar a VCC para evitar pausas.\n" +
+                "- WP (Pin 3) y HOLD (Pin 7) → Conectar a VCC.\n" +
                 "- Tensión: Verificar si la memoria es de 3.3V o 5V.";
     }
 }

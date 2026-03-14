@@ -71,13 +71,12 @@ public class I2cProtocol implements EepromProtocol {
     @Override
     public String getHardwareInstructions() {
         return "Conexiones I2C (24Cxx):\n" +
-                "• PIC RA0  → EEPROM SDA (Pin 5)\n" +
-                "• PIC RA1  → EEPROM SCL (Pin 6)\n" +
-                "• PIC GND  → EEPROM GND (Pin 4)\n" +
-                "• PIC VCC  → EEPROM VCC (Pin 8)\n\n" +
+                "• PIC RA0 (Pin 17) → EEPROM SDA (Pin 5)\n" +
+                "• PIC RA1 (Pin 18) → EEPROM SCL (Pin 6)\n" +
+                "• PIC GND (Pin 5)  → EEPROM GND (Pin 4)\n" +
+                "• PIC VDD (Pin 14) → EEPROM VCC (Pin 8)\n\n" +
                 "⚠ EXIGENCIAS DE HARDWARE:\n" +
-                "- SDA y SCL REQUIEREN resistencias Pull-Up externas hacia VCC.\n" +
-                "- Valor ideal: 4.7kΩ (rango aceptable: 2.2kΩ a 10kΩ).\n" +
+                "- SDA y SCL REQUIEREN resistencias Pull-Up (4.7kΩ) a VCC.\n" +
                 "- Pines A0, A1, A2 (1, 2, 3) → Conectar a GND.\n" +
                 "- WP (Pin 7) → Conectar a GND para permitir escritura.";
     }
