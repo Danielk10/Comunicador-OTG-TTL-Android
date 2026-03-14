@@ -47,6 +47,21 @@ public class SpiProtocol implements EepromProtocol {
         return new byte[] { getCommandPrefix(), 'E' }; // SPI Chip Erase (50 45)
     }
 
+    @Override
+    public byte[] buildPingCommand() {
+        return new byte[] { 0x3F }; // '?'
+    }
+
+    @Override
+    public byte[] buildScanOrIdCommand() {
+        return new byte[] { getCommandPrefix(), 'J' }; // 'P' 'J' (JEDEC ID)
+    }
+
+    @Override
+    public byte[] buildFullDumpCommand(int modelIndex) {
+        return new byte[] { getCommandPrefix(), 'F' }; // 'P' 'F' (Full Auto Dump)
+    }
+
     private byte getAddrLen(int modelIdx) {
         if (modelIdx < 3)
             return 1;

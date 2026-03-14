@@ -263,6 +263,28 @@
                         app:icon="@android:drawable/ic_menu_info_details" />
 
                     <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnScan"
+                        style="@style/Widget.Material3.Button.TonalButton"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_columnWeight="1"
+                        android:layout_margin="4dp"
+                        android:text="Escanear / ID"
+                        android:enabled="false"
+                        app:icon="@android:drawable/ic_menu_help" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnFullDump"
+                        style="@style/Widget.Material3.Button.TonalButton"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_columnWeight="1"
+                        android:layout_margin="4dp"
+                        android:text="Full Dump (v3)"
+                        android:enabled="false"
+                        app:icon="@android:drawable/ic_menu_revert" />
+
+                    <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnSave"
                         style="@style/Widget.Material3.Button"
                         android:layout_width="0dp"

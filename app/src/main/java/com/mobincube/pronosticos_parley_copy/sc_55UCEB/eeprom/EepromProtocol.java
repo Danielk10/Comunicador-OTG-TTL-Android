@@ -42,9 +42,24 @@ public interface EepromProtocol {
     int getTotalSize(int modelIndex);
 
     /**
-     * Construye el comando para borrar la memoria (si lo soporta el protocolo)
+     * Construye el comando de borrado la memoria (si lo soporta el protocolo)
      */
     byte[] buildEraseCommand(int modelIndex);
+
+    /**
+     * Construye el comando de Ping (3F)
+     */
+    byte[] buildPingCommand();
+
+    /**
+     * Construye el comando de escaneo I2C (49 53) o JEDEC ID (50 4A)
+     */
+    byte[] buildScanOrIdCommand();
+
+    /**
+     * Construye el comando de volcado completo automático (49 46 o 50 46)
+     */
+    byte[] buildFullDumpCommand(int modelIndex);
 
     /**
      * Instrucciones de hardware ricas en texto

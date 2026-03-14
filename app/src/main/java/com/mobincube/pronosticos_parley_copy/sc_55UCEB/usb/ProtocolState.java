@@ -5,5 +5,8 @@ public enum ProtocolState {
     READING,
     WRITING,
     ERASING,
-    VERIFYING
+    VERIFYING,
+    PINGING,
+    SCANNING_ID,
+    FULL_DUMPING
 }

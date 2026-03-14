@@ -67,6 +67,27 @@ public class I2cProtocol implements EepromProtocol {
     public byte[] buildEraseCommand(int modelIndex) {
         return null; // I2C no tiene comando nativo de borrado de chip en v3
     }
+    
+    @Override
+    public byte[] buildPingCommand() {
+        return new byte[] { 0x3F }; // '?'
+    }
+
+    @Override
+    public byte[] buildScanOrIdCommand() {
+        return new byte[] { getCommandPrefix(), 'S' }; // 'I' 'S'
+    }
+
+    @Override
+    public byte[] buildFullDumpCommand(int modelIndex) {
+        int length = getTotalSize(modelIndex);
+        byte addrLen = (byte) (modelIndex <= 4 ? 1 : 2);
+        byte chipAddr = generateChipAddr(0, modelIndex);
+        byte lenHi = (byte) ((length >> 8) & 0xFF);
+        byte lenLo = (byte) (length & 0xFF);
+        
+        return new byte[] { getCommandPrefix(), 'F', addrLen, chipAddr, lenHi, lenLo };
+    }
 
     @Override
     public String getHardwareInstructions() {
