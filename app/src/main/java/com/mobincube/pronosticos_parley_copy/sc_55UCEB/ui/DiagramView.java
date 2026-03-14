@@ -75,7 +75,7 @@ public class DiagramView extends View {
             "6: RB0", "7: RB1 (RX)", "8: RB2 (TX)", "9: RB3"
         };
         String[] right = {
-            "18: RA1 (SCL)", "17: RA0 (SDA)", "16: OSC2", "15: OSC1 (MOSI)", "14: VDD (VCC)", 
+            "18: RA1 (SCL)", "17: RA0 (SDA)", "16: OSC2", "15: RA6 (MOSI)", "14: VDD (VCC)", 
             "13: RB7", "12: RB6", "11: RB5", "10: RB4"
         };
 

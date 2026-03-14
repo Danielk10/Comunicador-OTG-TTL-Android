@@ -44,7 +44,10 @@ public class SpiProtocol implements EepromProtocol {
 
     @Override
     public byte[] buildEraseCommand(int modelIndex) {
-        return new byte[] { getCommandPrefix(), 'E' }; // SPI Chip Erase (50 45)
+        if (modelIndex < 10) {
+            return null; // EEPROMs SPI no soportan Chip Erase (0xC7), usar sobrescritura 0xFF
+        }
+        return new byte[] { getCommandPrefix(), 'E' }; // SPI Chip Erase (50 45) para Flash
     }
 
     @Override

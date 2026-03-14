@@ -81,6 +81,7 @@ public class I2cProtocol implements EepromProtocol {
     @Override
     public byte[] buildFullDumpCommand(int modelIndex) {
         int length = getTotalSize(modelIndex);
+        if (length > 65535) length = 65535; // Cap for firmware uint16_t (max 64KB-1)
         byte addrLen = (byte) (modelIndex <= 4 ? 1 : 2);
         byte chipAddr = generateChipAddr(0, modelIndex);
         byte lenHi = (byte) ((length >> 8) & 0xFF);

@@ -492,6 +492,11 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
         int model = spinnerModel.getSelectedItemPosition();
         totalSize = getActiveProtocol().getTotalSize(model);
         
+        // Ajustar totalSize para I2C si excede el límite del firmware (64KB-1)
+        if (getActiveProtocol() instanceof I2cProtocol && totalSize > 65535) {
+            totalSize = 65535;
+        }
+        
         log("Iniciando Volcado Completo Automático...");
         progressBar.setMax(totalSize);
         progressBar.setProgress(0);
@@ -550,6 +555,9 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
             btnFullDump.setEnabled(connected && !isBusy);
             btnVerify.setEnabled(!isBusy && eepromBuffer != null && writeDataBuffer != null);
             btnSave.setEnabled(!isBusy && eepromBuffer != null);
+            
+            spinnerProtocol.setEnabled(!isBusy);
+            spinnerModel.setEnabled(!isBusy);
 
             if (connected) {
                 statusDot.setBackgroundColor(
@@ -724,19 +732,26 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
         } else if (state == ProtocolState.SCANNING_ID) {
             if (getActiveProtocol() instanceof I2cProtocol) {
                 // I2C Scan: Lista de direcciones encontradas terminada en 0xFF
-                StringBuilder sb = new StringBuilder("Dispositivos I2C encontrados: ");
                 for (byte b : data) {
-                    if ((b & 0xFF) == 0xFF) { // Fin de lista (0xFF)
+                    int val = b & 0xFF;
+                    if (val == 0xFF) { // Fin de lista (0xFF)
                         state = ProtocolState.IDLE;
                         taskHandler.removeCallbacks(timeoutRunnable);
-                        if (readStream != null && readStream.size() > 0) {
-                            log("Escaneo finalizado.");
+                        byte[] found = readStream.toByteArray();
+                        StringBuilder sb = new StringBuilder("Dispositivos I2C encontrados: ");
+                        if (found.length == 0) {
+                            sb.append("Ninguno");
                         } else {
-                            log(sb.toString());
+                            for (byte addr : found) {
+                                sb.append(String.format("0x%02X ", addr));
+                            }
                         }
+                        log(sb.toString());
+                        log("Escaneo finalizado.");
+                        runOnUiThread(() -> updateUIState(true));
                         break;
-                    } else if ((b & 0xFF) != 0x55) { // Evitar RESP_END si aparece
-                        sb.append(String.format("0x%02X ", b));
+                    } else if (val != 0x55 && val != 0x58) { // Ignorar tokens RESP_END o RESP_ERR si se cuelan
+                        readStream.write(b);
                     }
                 }
             } else {
@@ -746,8 +761,10 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
                 if (accumulated.length >= 3) {
                     state = ProtocolState.IDLE;
                     taskHandler.removeCallbacks(timeoutRunnable);
-                    String info = String.format("SPI JEDEC ID: %02X %02X %02X", accumulated[0] & 0xFF, accumulated[1] & 0xFF, accumulated[2] & 0xFF);
+                    String info = String.format("SPI JEDEC ID: %02X %02X %02X", 
+                            accumulated[0] & 0xFF, accumulated[1] & 0xFF, accumulated[2] & 0xFF);
                     log(info);
+                    runOnUiThread(() -> updateUIState(true));
                 }
             }
         } else if (state == ProtocolState.FULL_DUMPING) {
