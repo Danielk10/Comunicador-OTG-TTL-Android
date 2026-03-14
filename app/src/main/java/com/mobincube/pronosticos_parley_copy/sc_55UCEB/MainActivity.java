@@ -476,10 +476,12 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
     private void startScan() {
         if (!serialManager.isConnected()) return;
         state = ProtocolState.SCANNING_ID;
+        readStream = new ByteArrayOutputStream(); // Buffer para respuesta
         byte[] cmd = getActiveProtocol().buildScanOrIdCommand();
         log("Escaneando bus I2C o JEDEC ID...");
         serialManager.sendData(cmd);
         resetTimeout();
+        updateUIState(true);
     }
 
     private void startFullDump() {
@@ -604,6 +606,7 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
             log("Puerto USB inicializado con éxito.");
             // Iniciar Ping automático al conectar
             state = ProtocolState.PINGING;
+            readStream = new ByteArrayOutputStream(); // Buffer para el Ping
             serialManager.sendData(getActiveProtocol().buildPingCommand());
             resetTimeout();
             updateUIState(true);
@@ -628,6 +631,16 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
                 for (byte b : data) {
                     int val = b & 0xFF;
                     
+                    if (val == 0x58) { // RESP_ERR
+                        state = ProtocolState.IDLE;
+                        log("Error de lectura: El PIC devolvió RESP_ERR.");
+                        runOnUiThread(() -> {
+                            progressBar.setVisibility(View.GONE);
+                            updateUIState(true);
+                        });
+                        return;
+                    }
+
                     // Si ya recibimos todos los datos del chunk, el siguiente byte DEBE ser RESP_END (0x55)
                     if (readStream.size() >= (currentAddress + expectedForThisChunk)) {
                         if (val == 0x55) { // RESP_END
@@ -643,7 +656,7 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
                         }
                     } else {
                         readStream.write(b);
-                        // Mostrar progreso en vivo (Throttling ya está en HexViewerHelper)
+                        // Mostrar progreso en vivo
                         byte[] currentBuffer = readStream.toByteArray();
                         hexHelper.renderThrottled(currentBuffer);
                     }
@@ -692,13 +705,15 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
                 }
             }
         } else if (state == ProtocolState.PINGING) {
-            String incoming = new String(data, StandardCharsets.UTF_8);
+            readStream.write(data, 0, data.length);
+            String incoming = new String(readStream.toByteArray(), StandardCharsets.UTF_8);
             if (incoming.contains("PICMEM v3 OK")) {
                 state = ProtocolState.IDLE;
                 taskHandler.removeCallbacks(timeoutRunnable);
                 runOnUiThread(() -> {
                     log("Firmware v3 detectado y verificado (Ping OK).");
                     Toast.makeText(MainActivity.this, "PICMEM v3 Detectado", Toast.LENGTH_SHORT).show();
+                    updateUIState(true);
                 });
             }
         } else if (state == ProtocolState.SCANNING_ID) {
@@ -721,21 +736,32 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
                 }
             } else {
                 // SPI JEDEC ID: 3 bytes (ManID, MemType, MemCap)
-                if (data.length >= 3) {
+                readStream.write(data, 0, data.length);
+                byte[] accumulated = readStream.toByteArray();
+                if (accumulated.length >= 3) {
                     state = ProtocolState.IDLE;
                     taskHandler.removeCallbacks(timeoutRunnable);
-                    String info = String.format("SPI JEDEC ID: %02X %02X %02X", data[0], data[1], data[2]);
+                    String info = String.format("SPI JEDEC ID: %02X %02X %02X", accumulated[0], accumulated[1], accumulated[2]);
                     log(info);
-                    // Podríamos automatizar la selección del modelo aquí en el futuro
                 }
             }
         } else if (state == ProtocolState.FULL_DUMPING) {
             for (byte b : data) {
                 int val = b & 0xFF;
+                if (val == 0x58) { // RESP_ERR
+                    state = ProtocolState.IDLE;
+                    log("Error: El PIC abortó el volcado completo (RESP_ERR).");
+                    runOnUiThread(() -> {
+                        progressBar.setVisibility(View.GONE);
+                        updateUIState(true);
+                    });
+                    return;
+                }
+                
                 if (val == 0x55 && readStream.size() >= totalSize) { // RESP_END
                     finishRead();
                     return;
-                } else {
+                } else if (readStream.size() < totalSize) {
                     readStream.write(b);
                     if (readStream.size() % 64 == 0) {
                         runOnUiThread(() -> progressBar.setProgress(readStream.size()));
