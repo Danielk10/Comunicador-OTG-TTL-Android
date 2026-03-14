@@ -21,7 +21,12 @@
         <item>24Cxx 2Mb (262144 bytes)</item>
     </string-array>
 
+    <!-- FIX #6: se añaden modelos Flash NOR (indices 13-17) al final del array.
+         Los indices deben coincidir exactamente con SpiProtocol.spiSizes[]:
+           0-12  -> EEPROM SPI 25Cxx  (sin Chip Erase nativo)
+           13-17 -> Flash NOR W25Qxx  (con Chip Erase 0xC7, 3-byte address)     -->
     <string-array name="eeprom_spi_sizes">
+        <!-- EEPROM SPI 25Cxx (indices 0-12) -->
         <item>25Cxx 1Kb (128 bytes)</item>
         <item>25Cxx 2Kb (256 bytes)</item>
         <item>25Cxx 4Kb (512 bytes)</item>
@@ -35,6 +40,12 @@
         <item>25Cxx 1Mb (131072 bytes)</item>
         <item>25Cxx 2Mb (262144 bytes)</item>
         <item>25Cxx 4Mb (524288 bytes)</item>
+        <!-- Flash NOR W25Qxx / MX25Lxx (indices 13-17) -->
+        <item>W25Q08 / MX25L80 — 1 MB (Flash NOR)</item>
+        <item>W25Q16 / MX25L16 — 2 MB (Flash NOR)</item>
+        <item>W25Q32 / MX25L32 — 4 MB (Flash NOR)</item>
+        <item>W25Q64 / MX25L64 — 8 MB (Flash NOR)</item>
+        <item>W25Q128 / MX25L128 — 16 MB (Flash NOR)</item>
     </string-array>
 
     <string name="connect">Conectar</string>
