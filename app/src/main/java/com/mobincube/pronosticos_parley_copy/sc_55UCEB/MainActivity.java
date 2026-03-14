@@ -163,7 +163,6 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
         tvStatusLabel = findViewById(R.id.tvStatusLabel);
         tvInstructions = findViewById(R.id.tvInstructions);
 
-        TextView tvHexViewer = findViewById(R.id.tvHexViewer);
         TextView tvLog = findViewById(R.id.tvLog);
         ScrollView scrollLog = findViewById(R.id.scrollLog);
 
@@ -172,7 +171,7 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
         progressBar = findViewById(R.id.progressBar);
 
         logHelper = new LogHelper(this, tvLog, scrollLog);
-        hexHelper = new HexViewerHelper(this, tvHexViewer);
+        hexHelper = new HexViewerHelper(this);
     }
 
     private void setupSpinners() {
