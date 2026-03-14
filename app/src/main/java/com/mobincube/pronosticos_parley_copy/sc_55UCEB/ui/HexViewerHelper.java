@@ -25,18 +25,28 @@ public class HexViewerHelper {
     }
 
     public void renderNow(final byte[] data) {
+        if (data == null) return;
         activity.runOnUiThread(() -> {
             StringBuilder sb = new StringBuilder();
             sb.append("Dirección | 00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F | ASCII\n");
             sb.append("------------------------------------------------------------------\n");
 
+            char[] hexChars = "0123456789ABCDEF".toCharArray();
+
             for (int i = 0; i < data.length; i += 16) {
-                sb.append(String.format("%08X  | ", i));
+                // Address (8 digits)
+                for (int n = 28; n >= 0; n -= 4) {
+                    sb.append(hexChars[(i >> n) & 0x0F]);
+                }
+                sb.append("  | ");
 
                 // Hex bytes
                 for (int j = 0; j < 16; j++) {
                     if (i + j < data.length) {
-                        sb.append(String.format("%02X ", data[i + j]));
+                        int b = data[i + j] & 0xFF;
+                        sb.append(hexChars[b >>> 4]);
+                        sb.append(hexChars[b & 0x0F]);
+                        sb.append(' ');
                     } else {
                         sb.append("   ");
                     }
@@ -46,9 +56,9 @@ public class HexViewerHelper {
                 // ASCII chars
                 for (int j = 0; j < 16; j++) {
                     if (i + j < data.length) {
-                        char c = (char) data[i + j];
-                        if (c >= 32 && c <= 126) {
-                            sb.append(c);
+                        int b = data[i + j] & 0xFF;
+                        if (b >= 32 && b <= 126) {
+                            sb.append((char) b);
                         } else {
                             sb.append('.');
                         }

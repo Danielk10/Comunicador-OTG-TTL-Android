@@ -330,19 +330,24 @@
                         android:background="@color/bg_terminal"
                         android:padding="8dp">
 
-                        <HorizontalScrollView
+                        <ScrollView
                             android:layout_width="match_parent"
                             android:layout_height="match_parent">
 
-                            <TextView
-                                android:id="@+id/tvHexViewer"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="Esperando lectura..."
-                                android:textColor="@color/text_terminal"
-                                android:textSize="13sp"
-                                android:typeface="monospace" />
-                        </HorizontalScrollView>
+                            <HorizontalScrollView
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content">
+
+                                <TextView
+                                    android:id="@+id/tvHexViewer"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="Esperando lectura..."
+                                    android:textColor="@color/text_terminal"
+                                    android:textSize="13sp"
+                                    android:typeface="monospace" />
+                            </HorizontalScrollView>
+                        </ScrollView>
                     </FrameLayout>
 
                     <ProgressBar

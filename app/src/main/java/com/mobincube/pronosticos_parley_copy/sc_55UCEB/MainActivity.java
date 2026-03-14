@@ -627,6 +627,7 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
         if (state == ProtocolState.READING) {
             try {
                 int expectedForThisChunk = Math.min(READ_CHUNK_SIZE, totalSize - currentAddress);
+                boolean updateUi = false;
                 
                 for (byte b : data) {
                     int val = b & 0xFF;
@@ -645,7 +646,8 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
                     if (readStream.size() >= (currentAddress + expectedForThisChunk)) {
                         if (val == 0x55) { // RESP_END
                             currentAddress += expectedForThisChunk;
-                            runOnUiThread(() -> progressBar.setProgress(currentAddress));
+                            final int progress = currentAddress;
+                            runOnUiThread(() -> progressBar.setProgress(progress));
                             
                             if (currentAddress >= totalSize) {
                                 finishRead();
@@ -656,17 +658,19 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
                         }
                     } else {
                         readStream.write(b);
-                        // Mostrar progreso en vivo
-                        byte[] currentBuffer = readStream.toByteArray();
-                        hexHelper.renderThrottled(currentBuffer);
+                        updateUi = true;
                     }
+                }
+                
+                if (updateUi) {
+                    hexHelper.renderThrottled(readStream.toByteArray());
                 }
                 resetTimeout();
             } catch (Exception e) {
                 e.printStackTrace();
             }
         } else if (state == ProtocolState.WRITING) {
-            // El PIC responde con 'K' (0x4B) al terminar un chunk
+            // El PIC responde con 'K' (0x4B) al tener éxito en un chunk
             for (byte b : data) {
                 if (b == 0x4B) { // RESP_OK ('K')
                     int model = spinnerModel.getSelectedItemPosition();
@@ -676,7 +680,8 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
                     int expectedForThisChunk = Math.min(chunkLimit, writeDataBuffer.length - currentAddress);
 
                     currentAddress += expectedForThisChunk;
-                    runOnUiThread(() -> progressBar.setProgress(currentAddress));
+                    final int progress = currentAddress;
+                    runOnUiThread(() -> progressBar.setProgress(progress));
                     sendNextWriteChunk();
                     break;
                 } else if (b == 0x58) { // RESP_ERR
@@ -741,11 +746,12 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
                 if (accumulated.length >= 3) {
                     state = ProtocolState.IDLE;
                     taskHandler.removeCallbacks(timeoutRunnable);
-                    String info = String.format("SPI JEDEC ID: %02X %02X %02X", accumulated[0], accumulated[1], accumulated[2]);
+                    String info = String.format("SPI JEDEC ID: %02X %02X %02X", accumulated[0] & 0xFF, accumulated[1] & 0xFF, accumulated[2] & 0xFF);
                     log(info);
                 }
             }
         } else if (state == ProtocolState.FULL_DUMPING) {
+            boolean updateUi = false;
             for (byte b : data) {
                 int val = b & 0xFF;
                 if (val == 0x58) { // RESP_ERR
@@ -763,11 +769,15 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
                     return;
                 } else if (readStream.size() < totalSize) {
                     readStream.write(b);
-                    if (readStream.size() % 64 == 0) {
-                        runOnUiThread(() -> progressBar.setProgress(readStream.size()));
-                        hexHelper.renderThrottled(readStream.toByteArray());
+                    if (readStream.size() % 128 == 0) {
+                        final int progress = readStream.size();
+                        runOnUiThread(() -> progressBar.setProgress(progress));
+                        updateUi = true;
                     }
                 }
+            }
+            if (updateUi) {
+                hexHelper.renderThrottled(readStream.toByteArray());
             }
             resetTimeout();
         }
