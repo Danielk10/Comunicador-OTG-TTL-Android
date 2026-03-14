@@ -490,7 +490,7 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
         int model = spinnerModel.getSelectedItemPosition();
         totalSize = getActiveProtocol().getTotalSize(model);
         
-        log("Iniciando Volcado Completo Automático (v3)...");
+        log("Iniciando Volcado Completo Automático...");
         progressBar.setMax(totalSize);
         progressBar.setProgress(0);
         progressBar.setVisibility(View.VISIBLE);

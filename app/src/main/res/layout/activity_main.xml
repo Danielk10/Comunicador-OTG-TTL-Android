@@ -280,7 +280,7 @@
                         android:layout_height="wrap_content"
                         android:layout_columnWeight="1"
                         android:layout_margin="4dp"
-                        android:text="Full Dump (v3)"
+                        android:text="Full Dump"
                         android:enabled="false"
                         app:icon="@android:drawable/ic_menu_revert" />
 
