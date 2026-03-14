@@ -30,7 +30,7 @@
             android:orientation="vertical"
             android:padding="12dp">
 
-            <!-- Connection Status Card -->
+            <!-- ── Estado de conexión ───────────────────────────────────── -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -101,7 +101,7 @@
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- Configuration Card -->
+            <!-- ── Configuración ────────────────────────────────────────── -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -167,7 +167,7 @@
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- Actions Card -->
+            <!-- ── Acciones ─────────────────────────────────────────────── -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -265,30 +265,27 @@
                 </GridLayout>
             </com.google.android.material.card.MaterialCardView>
 
+            <!-- ── Instrucciones de hardware ────────────────────────────── -->
             <TextView
                 android:id="@+id/tvInstructions"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginHorizontal="8dp"
                 android:layout_marginBottom="8dp"
-                android:gravity="center"
                 android:text="Conecte el dispositivo USB para comenzar"
                 android:textColor="@color/text_secondary"
                 android:textSize="12sp" />
 
-            <ProgressBar
-                android:id="@+id/progressBar"
-                style="?android:attr/progressBarStyleHorizontal"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="8dp"
-                android:progressTint="@color/color_primary"
-                android:visibility="gone" />
+            <!--
+                BARRA DE PROGRESO ELIMINADA DE LA ACTIVIDAD PRINCIPAL.
+                Solo existe la barra dentro del PopupWindow (popup_hex_viewer.xml).
+                Esto evita la duplicidad visual y los errores de referencia.
+            -->
 
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
 
-    <!-- Log Card at Bottom Fixed -->
+    <!-- ── Log fijo en la parte inferior ───────────────────────────────── -->
     <com.google.android.material.card.MaterialCardView
         android:layout_width="match_parent"
         android:layout_height="180dp"
