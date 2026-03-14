@@ -1,4 +1,4 @@
-package com.diamon.ttl.usb;
+package com.mobincube.pronosticos_parley_copy.sc_55UCEB.usb;
 
 import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
@@ -22,7 +22,7 @@ import java.util.List;
 public class UsbSerialManager implements SerialInputOutputManager.Listener {
 
     private static final String TAG = "UsbSerialManager";
-    private static final String ACTION_USB_PERMISSION = "com.diamon.ttl.USB_PERMISSION";
+    private static final String ACTION_USB_PERMISSION = "com.mobincube.pronosticos_parley_copy.sc_55UCEB.USB_PERMISSION";
 
     private final Context context;
     private final UsbManager usbManager;

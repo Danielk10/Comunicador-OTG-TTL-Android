@@ -1,4 +1,4 @@
-package com.diamon.ttl;
+package com.mobincube.pronosticos_parley_copy.sc_55UCEB;
 
 import android.content.Context;
 
@@ -21,6 +21,6 @@ public class ExampleInstrumentedTest {
     public void useAppContext() {
         // Context of the app under test.
         Context appContext = InstrumentationRegistry.getInstrumentation().getTargetContext();
-        assertEquals("com.diamon.ttl", appContext.getPackageName());
+        assertEquals("com.mobincube.pronosticos_parley_copy.sc_55UCEB", appContext.getPackageName());
     }
 }

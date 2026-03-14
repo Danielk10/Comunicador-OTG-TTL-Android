@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Comunicador OTG TTL</string>
+    <string name="app_name">OTG Flash EEPROM</string>
     <string name="menu_open_terminal">Abrir comunicador TTL</string>
 
     <string-array name="baudrates">

@@ -1,4 +1,4 @@
-package com.diamon.ttl.eeprom;
+package com.mobincube.pronosticos_parley_copy.sc_55UCEB.eeprom;
 
 public class I2cProtocol implements EepromProtocol {
 

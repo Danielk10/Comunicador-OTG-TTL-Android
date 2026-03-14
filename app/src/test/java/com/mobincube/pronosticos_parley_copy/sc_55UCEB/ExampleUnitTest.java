@@ -1,4 +1,4 @@
-package com.diamon.ttl;
+package com.mobincube.pronosticos_parley_copy.sc_55UCEB;
 
 import org.junit.Test;
 

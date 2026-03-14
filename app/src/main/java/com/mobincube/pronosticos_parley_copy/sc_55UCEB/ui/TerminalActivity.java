@@ -1,4 +1,4 @@
-package com.diamon.ttl.ui;
+package com.mobincube.pronosticos_parley_copy.sc_55UCEB.ui;
 
 import android.graphics.Color;
 import android.os.Bundle;
@@ -13,9 +13,9 @@ import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
-import com.diamon.ttl.R;
-import com.diamon.ttl.usb.UsbSerialListener;
-import com.diamon.ttl.usb.UsbSerialManager;
+import com.mobincube.pronosticos_parley_copy.sc_55UCEB.R;
+import com.mobincube.pronosticos_parley_copy.sc_55UCEB.usb.UsbSerialListener;
+import com.mobincube.pronosticos_parley_copy.sc_55UCEB.usb.UsbSerialManager;
 import com.hoho.android.usbserial.driver.UsbSerialPort;
 
 import java.nio.charset.StandardCharsets;
