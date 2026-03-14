@@ -177,18 +177,19 @@
             android:textSize="16sp"
             android:textStyle="bold" />
 
-        <LinearLayout
+        <GridLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:orientation="horizontal">
+            android:columnCount="2"
+            android:alignmentMode="alignMargins">
 
             <Button
                 android:id="@+id/btnRead"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_marginEnd="4dp"
-                android:layout_weight="1"
+                android:layout_columnWeight="1"
+                android:layout_margin="2dp"
                 android:enabled="false"
                 android:text="@string/read_eeprom" />
 
@@ -196,19 +197,39 @@
                 android:id="@+id/btnWrite"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="4dp"
-                android:layout_weight="1"
+                android:layout_columnWeight="1"
+                android:layout_margin="2dp"
                 android:enabled="false"
                 android:text="@string/write_eeprom" />
-        </LinearLayout>
 
-        <Button
-            android:id="@+id/btnSave"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:enabled="false"
-            android:text="@string/save_eeprom" />
+            <Button
+                android:id="@+id/btnErase"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_columnWeight="1"
+                android:layout_margin="2dp"
+                android:enabled="false"
+                android:text="@string/erase_eeprom" />
+
+            <Button
+                android:id="@+id/btnVerify"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_columnWeight="1"
+                android:layout_margin="2dp"
+                android:enabled="false"
+                android:text="@string/verify_eeprom" />
+
+            <Button
+                android:id="@+id/btnSave"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_columnWeight="2"
+                android:layout_columnSpan="2"
+                android:layout_margin="2dp"
+                android:enabled="false"
+                android:text="@string/save_eeprom" />
+        </GridLayout>
 
         <TextView
             android:layout_width="match_parent"
@@ -242,13 +263,33 @@
         </ScrollView>
 
         <!-- Log Container -->
-        <TextView
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Registro de Operaciones (Log)"
-            android:textColor="#CCCCCC"
-            android:textStyle="bold"
-            android:layout_marginTop="8dp"/>
+            android:layout_marginTop="16dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Registro de Operaciones (Log)"
+                android:textColor="#CCCCCC"
+                android:textStyle="bold" />
+
+            <Button
+                android:id="@+id/btnClearLog"
+                style="?android:attr/borderlessButtonStyle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:minHeight="0dp"
+                android:padding="8dp"
+                android:text="@string/clear_log"
+                android:textAllCaps="false"
+                android:textColor="#3FB1CE"
+                android:textSize="12sp" />
+        </LinearLayout>
 
         <ScrollView
             android:id="@+id/scrollLog"

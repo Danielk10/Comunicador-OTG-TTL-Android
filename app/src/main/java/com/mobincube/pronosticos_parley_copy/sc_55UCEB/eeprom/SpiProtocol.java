@@ -20,8 +20,10 @@ public class SpiProtocol implements EepromProtocol {
         byte addrHi = (byte) ((address >> 16) & 0xFF);
         byte addrMid = (byte) ((address >> 8) & 0xFF);
         byte addrLo = (byte) (address & 0xFF);
+        byte lenHi = (byte) ((length >> 8) & 0xFF);
+        byte lenLo = (byte) (length & 0xFF);
 
-        return new byte[] { getCommandPrefix(), 'R', addrLen, spiOpcode, addrHi, addrMid, addrLo, (byte) length };
+        return new byte[] { getCommandPrefix(), 'R', addrLen, spiOpcode, addrHi, addrMid, addrLo, lenHi, lenLo };
     }
 
     @Override
@@ -34,8 +36,15 @@ public class SpiProtocol implements EepromProtocol {
         byte addrHi = (byte) ((address >> 16) & 0xFF);
         byte addrMid = (byte) ((address >> 8) & 0xFF);
         byte addrLo = (byte) (address & 0xFF);
+        byte lenHi = (byte) ((length >> 8) & 0xFF);
+        byte lenLo = (byte) (length & 0xFF);
 
-        return new byte[] { getCommandPrefix(), 'W', addrLen, spiOpcode, addrHi, addrMid, addrLo, (byte) length };
+        return new byte[] { getCommandPrefix(), 'W', addrLen, spiOpcode, addrHi, addrMid, addrLo, lenHi, lenLo };
+    }
+
+    @Override
+    public byte[] buildEraseCommand(int modelIndex) {
+        return new byte[] { getCommandPrefix(), 'E' }; // SPI Chip Erase (50 45)
     }
 
     private byte getAddrLen(int modelIdx) {

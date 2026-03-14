@@ -57,8 +57,11 @@
     <string name="disconnect">Desconectar</string>
     <string name="status_disconnected">Desconectado</string>
     <string name="status_connected">Conectado</string>
-    <string name="read_eeprom">Leer EEPROM</string>
-    <string name="write_eeprom">Escribir EEPROM</string>
-    <string name="save_eeprom">Guardar / Exportar (ROM)</string>
+    <string name="read_eeprom">Leer memoria</string>
+    <string name="write_eeprom">Escribir memoria</string>
+    <string name="erase_eeprom">Borrar memoria</string>
+    <string name="verify_eeprom">Verificar memoria</string>
+    <string name="clear_log">Limpiar Log</string>
+    <string name="save_eeprom">Exportar</string>
     <string name="connection_instructions">Instrucciones de conexión</string>
 </resources>

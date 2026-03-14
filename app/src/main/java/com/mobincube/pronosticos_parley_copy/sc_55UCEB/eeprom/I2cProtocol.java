@@ -15,8 +15,10 @@ public class I2cProtocol implements EepromProtocol {
         byte chipAddr = generateChipAddr(address, modelIdx);
         byte addrHi = (byte) ((address >> 8) & 0xFF);
         byte addrLo = (byte) (address & 0xFF);
+        byte lenHi = (byte) ((length >> 8) & 0xFF);
+        byte lenLo = (byte) (length & 0xFF);
 
-        return new byte[] { getCommandPrefix(), 'R', addrLen, chipAddr, addrHi, addrLo, (byte) length };
+        return new byte[] { getCommandPrefix(), 'R', addrLen, chipAddr, addrHi, addrLo, lenHi, lenLo };
     }
 
     @Override
@@ -25,8 +27,10 @@ public class I2cProtocol implements EepromProtocol {
         byte chipAddr = generateChipAddr(address, modelIdx);
         byte addrHi = (byte) ((address >> 8) & 0xFF);
         byte addrLo = (byte) (address & 0xFF);
+        byte lenHi = (byte) ((length >> 8) & 0xFF);
+        byte lenLo = (byte) (length & 0xFF);
 
-        return new byte[] { getCommandPrefix(), 'W', addrLen, chipAddr, addrHi, addrLo, (byte) length };
+        return new byte[] { getCommandPrefix(), 'W', addrLen, chipAddr, addrHi, addrLo, lenHi, lenLo };
     }
 
     private byte generateChipAddr(int address, int modelIdx) {
@@ -57,6 +61,11 @@ public class I2cProtocol implements EepromProtocol {
     @Override
     public int getTotalSize(int modelIndex) {
         return i2cSizes[modelIndex];
+    }
+
+    @Override
+    public byte[] buildEraseCommand(int modelIndex) {
+        return null; // I2C no tiene comando nativo de borrado de chip en v3
     }
 
     @Override

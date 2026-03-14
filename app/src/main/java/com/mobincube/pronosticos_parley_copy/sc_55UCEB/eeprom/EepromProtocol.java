@@ -42,6 +42,11 @@ public interface EepromProtocol {
     int getTotalSize(int modelIndex);
 
     /**
+     * Construye el comando para borrar la memoria (si lo soporta el protocolo)
+     */
+    byte[] buildEraseCommand(int modelIndex);
+
+    /**
      * Instrucciones de hardware ricas en texto
      */
     String getHardwareInstructions();

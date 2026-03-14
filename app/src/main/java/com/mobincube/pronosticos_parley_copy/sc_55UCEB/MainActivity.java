@@ -45,7 +45,7 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
 
     private UsbSerialManager serialManager;
 
-    private Button btnConnect, btnDisconnect, btnRead, btnWrite, btnSave;
+    private Button btnConnect, btnDisconnect, btnRead, btnWrite, btnErase, btnVerify, btnSave, btnClearLog;
     private Spinner spinnerBaudRate, spinnerProtocol, spinnerModel;
     private TextView tvStatusLabel, tvInstructions;
     private View statusDot, layoutStatus;
@@ -101,7 +101,10 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
         btnDisconnect.setOnClickListener(v -> disconnectSerial());
         btnRead.setOnClickListener(v -> startRead());
         btnWrite.setOnClickListener(v -> startWrite());
+        btnErase.setOnClickListener(v -> startErase());
+        btnVerify.setOnClickListener(v -> startVerify());
         btnSave.setOnClickListener(v -> saveBuffer());
+        btnClearLog.setOnClickListener(v -> clearLog());
 
         timeoutRunnable = () -> {
             if (state == ProtocolState.READING) {
@@ -110,7 +113,15 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
             }
             if (state == ProtocolState.WRITING) {
                 state = ProtocolState.IDLE;
-                Toast.makeText(this, "Tiempo de espera agotado escribiendo EEPROM", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Tiempo de espera agotado escribiendo memoria", Toast.LENGTH_SHORT).show();
+            }
+            if (state == ProtocolState.ERASING) {
+                state = ProtocolState.IDLE;
+                Toast.makeText(this, "Tiempo de espera agotado borrando memoria", Toast.LENGTH_SHORT).show();
+            }
+            if (state == ProtocolState.VERIFYING) {
+                state = ProtocolState.IDLE;
+                Toast.makeText(this, "Tiempo de espera agotado verificando memoria", Toast.LENGTH_SHORT).show();
             }
             updateUIState(serialManager.isConnected());
             progressBar.setVisibility(View.GONE);
@@ -122,7 +133,10 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
         btnDisconnect = findViewById(R.id.btnDisconnect);
         btnRead = findViewById(R.id.btnRead);
         btnWrite = findViewById(R.id.btnWrite);
+        btnErase = findViewById(R.id.btnErase);
+        btnVerify = findViewById(R.id.btnVerify);
         btnSave = findViewById(R.id.btnSave);
+        btnClearLog = findViewById(R.id.btnClearLog);
 
         spinnerBaudRate = findViewById(R.id.spinnerBaudRate);
         spinnerProtocol = findViewById(R.id.spinnerProtocol);
@@ -373,6 +387,86 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
     }
 
     // =========================================================================
+    // BORRADO
+    // =========================================================================
+
+    private void startErase() {
+        if (!serialManager.isConnected()) return;
+
+        int modelIdx = spinnerModel.getSelectedItemPosition();
+        byte[] cmd = getActiveProtocol().buildEraseCommand(modelIdx);
+
+        if (cmd == null) {
+            // I2C Erase: Write 0xFF to everything
+            log("Iniciando borrado I2C (Sobrescritura con 0xFF)...");
+            totalSize = getActiveProtocol().getTotalSize(modelIdx);
+            writeDataBuffer = new byte[totalSize];
+            java.util.Arrays.fill(writeDataBuffer, (byte) 0xFF);
+            state = ProtocolState.WRITING;
+            currentAddress = 0;
+            progressBar.setMax(totalSize);
+            progressBar.setProgress(0);
+            progressBar.setVisibility(View.VISIBLE);
+            updateUIState(true);
+            sendNextWriteChunk();
+        } else {
+            // SPI Native Erase
+            log("Iniciando borrado de chip SPI...");
+            state = ProtocolState.ERASING;
+            serialManager.sendData(cmd);
+            progressBar.setIndeterminate(true);
+            progressBar.setVisibility(View.VISIBLE);
+            updateUIState(true);
+            resetTimeout();
+        }
+    }
+
+    private void finishErase() {
+        state = ProtocolState.IDLE;
+        progressBar.setVisibility(View.GONE);
+        progressBar.setIndeterminate(false);
+        taskHandler.removeCallbacks(timeoutRunnable);
+        log("Borrado completado exitosamente.");
+        Toast.makeText(this, "Borrado completado", Toast.LENGTH_SHORT).show();
+        hexHelper.setText("Memoria borrada.");
+        updateUIState(serialManager.isConnected());
+    }
+
+    // =========================================================================
+    // VERIFICACIÓN
+    // =========================================================================
+
+    private void startVerify() {
+        if (!serialManager.isConnected() || eepromBuffer == null || writeDataBuffer == null) {
+            Toast.makeText(this, "Debe tener datos leídos y datos de archivo cargados", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        log("Verificando datos...");
+        int size = Math.min(eepromBuffer.length, writeDataBuffer.length);
+        int errors = 0;
+        for (int i = 0; i < size; i++) {
+            if (eepromBuffer[i] != writeDataBuffer[i]) {
+                if (errors < 10) {
+                    log(String.format("Error en 0x%X: Leído 0x%02X, Esperado 0x%02X", i, eepromBuffer[i], writeDataBuffer[i]));
+                }
+                errors++;
+            }
+        }
+        if (errors == 0) {
+            log("VERIFICACIÓN EXITOSA: Los datos coinciden.");
+            Toast.makeText(this, "Verificación exitosa", Toast.LENGTH_SHORT).show();
+        } else {
+            log("ERROR DE VERIFICACIÓN: " + errors + " diferencias encontradas.");
+            Toast.makeText(this, "Error: " + errors + " diferencias", Toast.LENGTH_LONG).show();
+        }
+    }
+
+    private void clearLog() {
+        if (logHelper != null) logHelper.clear();
+        log("Log limpiado.");
+    }
+
+    // =========================================================================
     // GUARDADO (EXPORT)
     // =========================================================================
 
@@ -409,6 +503,8 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
 
             btnRead.setEnabled(connected && !isBusy);
             btnWrite.setEnabled(connected && !isBusy);
+            btnErase.setEnabled(connected && !isBusy);
+            btnVerify.setEnabled(!isBusy && eepromBuffer != null && writeDataBuffer != null);
             btnSave.setEnabled(!isBusy && eepromBuffer != null);
 
             if (connected) {
@@ -430,6 +526,7 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
                 state = ProtocolState.IDLE;
                 taskHandler.removeCallbacks(timeoutRunnable);
                 progressBar.setVisibility(View.GONE);
+                progressBar.setIndeterminate(false);
             }
         });
     }
@@ -471,30 +568,39 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
     public void onSerialRead(byte[] data) {
         if (state == ProtocolState.READING) {
             try {
-                readStream.write(data);
-                int totalReadSoFar = readStream.size();
                 int expectedForThisChunk = Math.min(READ_CHUNK_SIZE, totalSize - currentAddress);
-
-                // Mostrar progreso en vivo en el visor Hex de forma controlada (Throttling)
-                // EVITA ANR!
-                byte[] currentBuffer = readStream.toByteArray();
-                hexHelper.renderThrottled(currentBuffer);
-
-                if (totalReadSoFar >= currentAddress + expectedForThisChunk) {
-                    currentAddress += expectedForThisChunk;
-                    runOnUiThread(() -> progressBar.setProgress(currentAddress));
-                    requestNextReadChunk();
-                } else {
-                    resetTimeout();
+                
+                for (byte b : data) {
+                    int val = b & 0xFF;
+                    
+                    // Si ya recibimos todos los datos del chunk, el siguiente byte DEBE ser RESP_END (0x55)
+                    if (readStream.size() >= (currentAddress + expectedForThisChunk)) {
+                        if (val == 0x55) { // RESP_END
+                            currentAddress += expectedForThisChunk;
+                            runOnUiThread(() -> progressBar.setProgress(currentAddress));
+                            
+                            if (currentAddress >= totalSize) {
+                                finishRead();
+                            } else {
+                                requestNextReadChunk();
+                            }
+                            return;
+                        }
+                    } else {
+                        readStream.write(b);
+                        // Mostrar progreso en vivo (Throttling ya está en HexViewerHelper)
+                        byte[] currentBuffer = readStream.toByteArray();
+                        hexHelper.renderThrottled(currentBuffer);
+                    }
                 }
+                resetTimeout();
             } catch (Exception e) {
                 e.printStackTrace();
             }
         } else if (state == ProtocolState.WRITING) {
-            // El PIC debería responder con una 'K' (Acknowledge Ok) cuando termina de
-            // escribir el chunk de datos
+            // El PIC responde con 'K' (0x4B) al terminar un chunk
             for (byte b : data) {
-                if (b == 'K') {
+                if (b == 0x4B) { // RESP_OK ('K')
                     int model = spinnerModel.getSelectedItemPosition();
                     int pageSize = getActiveProtocol().getPageSize(model);
                     int bytesToNextBoundary = pageSize - (currentAddress % pageSize);
@@ -505,6 +611,29 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
                     runOnUiThread(() -> progressBar.setProgress(currentAddress));
                     sendNextWriteChunk();
                     break;
+                } else if (b == 0x58) { // RESP_ERR
+                    state = ProtocolState.IDLE;
+                    log("Error de escritura (NACK/Error en el PIC).");
+                    runOnUiThread(() -> {
+                        progressBar.setVisibility(View.GONE);
+                        updateUIState(true);
+                    });
+                }
+            }
+        } else if (state == ProtocolState.ERASING) {
+            for (byte b : data) {
+                if (b == 0x4B) { // RESP_OK
+                    finishErase();
+                    break;
+                } else if (b == 0x58) { // RESP_ERR
+                    state = ProtocolState.IDLE;
+                    runOnUiThread(() -> {
+                        progressBar.setVisibility(View.GONE);
+                        progressBar.setIndeterminate(false);
+                        log("Error durante el borrado (RESP_ERR).");
+                        Toast.makeText(MainActivity.this, "Error al borrar", Toast.LENGTH_SHORT).show();
+                    });
+                    updateUIState(true);
                 }
             }
         }

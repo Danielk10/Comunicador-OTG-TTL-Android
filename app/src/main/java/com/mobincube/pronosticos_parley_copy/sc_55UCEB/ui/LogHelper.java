@@ -33,4 +33,10 @@ public class LogHelper {
             scrollLog.post(() -> scrollLog.fullScroll(View.FOCUS_DOWN));
         });
     }
+
+    public void clear() {
+        activity.runOnUiThread(() -> {
+            if (tvLog != null) tvLog.setText("");
+        });
+    }
 }
