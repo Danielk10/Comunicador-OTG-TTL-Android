@@ -64,4 +64,10 @@
     <string name="clear_log">Limpiar Log</string>
     <string name="save_eeprom">Exportar</string>
     <string name="connection_instructions">Instrucciones de conexión</string>
+    <string name="menu_about">Acerca de</string>
+    <string name="menu_pinout_pic">Pinout PIC 16F628A</string>
+    <string name="menu_i2c_conn">Conexiones I2C</string>
+    <string name="menu_spi_conn">Conexiones SPI</string>
+    <string name="about_title">Acerca de OTG Flash EEPROM</string>
+    <string name="about_message">OTG Flash EEPROM v3.0\n\nDesarrollado para programar memorias I2C y SPI usando un PIC 16F628A como puente.\n\nSoporta firmware PICMEM v3.</string>
 </resources>

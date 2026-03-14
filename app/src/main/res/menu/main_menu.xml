@@ -5,4 +5,24 @@
         android:id="@+id/action_open_terminal"
         android:title="@string/menu_open_terminal"
         app:showAsAction="never" />
+
+    <item
+        android:id="@+id/action_pinout_pic"
+        android:title="@string/menu_pinout_pic"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/action_i2c_conn"
+        android:title="@string/menu_i2c_conn"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/action_spi_conn"
+        android:title="@string/menu_spi_conn"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/action_about"
+        android:title="@string/menu_about"
+        app:showAsAction="never" />
 </menu>

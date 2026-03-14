@@ -20,6 +20,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.mobincube.pronosticos_parley_copy.sc_55UCEB.eeprom.EepromProtocol;
@@ -71,6 +72,21 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
     private final SpiProtocol spiProtocol = new SpiProtocol();
 
     private androidx.activity.result.ActivityResultLauncher<Intent> filePickerLauncher;
+
+
+    private void showAboutDialog() {
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.about_title)
+                .setMessage(R.string.about_message)
+                .setPositiveButton(android.R.string.ok, null)
+                .show();
+    }
+
+    private void openHardwareInfo(int type) {
+        Intent intent = new Intent(this, com.mobincube.pronosticos_parley_copy.sc_55UCEB.ui.HardwareInfoActivity.class);
+        intent.putExtra("type", type);
+        startActivity(intent);
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -539,8 +555,21 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
 
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
-        if (item.getItemId() == R.id.action_open_terminal) {
+        int id = item.getItemId();
+        if (id == R.id.action_open_terminal) {
             startActivity(new Intent(this, TerminalActivity.class));
+            return true;
+        } else if (id == R.id.action_about) {
+            showAboutDialog();
+            return true;
+        } else if (id == R.id.action_pinout_pic) {
+            openHardwareInfo(0);
+            return true;
+        } else if (id == R.id.action_i2c_conn) {
+            openHardwareInfo(1);
+            return true;
+        } else if (id == R.id.action_spi_conn) {
+            openHardwareInfo(2);
             return true;
         }
         return super.onOptionsItemSelected(item);
