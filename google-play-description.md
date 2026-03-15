@@ -201,7 +201,7 @@ Perfecto para técnicos en electrónica, reparadores, estudiantes de ingeniería
 
 - **Email:** danielpdiamon@gmail.com
 - **Sitio Web:** https://github.com/Danielk10/Comunicador-OTG-TTL-Android
-- **Política de Privacidad:** https://github.com/Danielk10/Comunicador-OTG-TTL-Android/blob/main/privacy-policy.html
+- **Política de Privacidad:** https://todoandroid.42web.io/politica-de-privacidad.html
 
 ### Permisos Requeridos (con Justificación)
 
