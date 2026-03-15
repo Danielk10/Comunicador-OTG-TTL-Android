@@ -1,68 +1,112 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">OTG Flash EEPROM</string>
 
     <string-array name="eeprom_protocols">
         <item>I2C (24Cxx)</item>
-        <item>SPI (25Cxx)</item>
+        <item>SPI (25Cxx / W25Qxx)</item>
     </string-array>
 
+    <!--
+        EEPROMs I2C 24Cxx
+        Índices 0-11 deben coincidir exactamente con I2cProtocol.i2cSizes[]
+        0 = 128 B (1 Kbit)   |  6 = 8 KB  (64 Kbit)
+        1 = 256 B (2 Kbit)   |  7 = 16 KB (128 Kbit)
+        2 = 512 B (4 Kbit)   |  8 = 32 KB (256 Kbit)
+        3 = 1 KB  (8 Kbit)   |  9 = 64 KB (512 Kbit)
+        4 = 2 KB  (16 Kbit)  | 10 = 128 KB (1 Mbit)
+        5 = 4 KB  (32 Kbit)  | 11 = 256 KB (2 Mbit)
+    -->
     <string-array name="eeprom_i2c_sizes">
-        <item>24Cxx 1Kb (128 bytes)</item>
-        <item>24Cxx 2Kb (256 bytes)</item>
-        <item>24Cxx 4Kb (512 bytes)</item>
-        <item>24Cxx 8Kb (1024 bytes)</item>
-        <item>24Cxx 16Kb (2048 bytes)</item>
-        <item>24Cxx 32Kb (4096 bytes)</item>
-        <item>24Cxx 64Kb (8192 bytes)</item>
-        <item>24Cxx 128Kb (16384 bytes)</item>
-        <item>24Cxx 256Kb (32768 bytes)</item>
-        <item>24Cxx 512Kb (65536 bytes)</item>
-        <item>24Cxx 1Mb (131072 bytes)</item>
-        <item>24Cxx 2Mb (262144 bytes)</item>
+        <item>24C01  —  128 bytes   (1 Kbit)</item>
+        <item>24C02  —  256 bytes   (2 Kbit)</item>
+        <item>24C04  —  512 bytes   (4 Kbit)</item>
+        <item>24C08  —  1 KB        (8 Kbit)</item>
+        <item>24C16  —  2 KB        (16 Kbit)</item>
+        <item>24C32  —  4 KB        (32 Kbit)</item>
+        <item>24C64  —  8 KB        (64 Kbit)</item>
+        <item>24C128 —  16 KB       (128 Kbit)</item>
+        <item>24C256 —  32 KB       (256 Kbit)</item>
+        <item>24C512 —  64 KB       (512 Kbit)</item>
+        <item>24C1024 — 128 KB      (1 Mbit)</item>
+        <item>24C2048 — 256 KB      (2 Mbit)</item>
     </string-array>
 
-    <!-- FIX #6: se añaden modelos Flash NOR (indices 13-17) al final del array.
-         Los indices deben coincidir exactamente con SpiProtocol.spiSizes[]:
-           0-12  -> EEPROM SPI 25Cxx  (sin Chip Erase nativo)
-           13-17 -> Flash NOR W25Qxx  (con Chip Erase 0xC7, 3-byte address)     -->
+    <!--
+        EEPROMs SPI 25Cxx + Flash NOR W25Qxx
+        Índices 0-12  → EEPROM SPI 25LCxx (sin Chip Erase nativo, addr 1-2 bytes)
+        Índices 13-17 → Flash NOR W25Qxx / MX25Lxx (con Chip Erase 0xC7, addr 3 bytes)
+        Deben coincidir exactamente con SpiProtocol.spiSizes[]
+    -->
     <string-array name="eeprom_spi_sizes">
-        <!-- EEPROM SPI 25Cxx (indices 0-12) -->
-        <item>25Cxx 1Kb (128 bytes)</item>
-        <item>25Cxx 2Kb (256 bytes)</item>
-        <item>25Cxx 4Kb (512 bytes)</item>
-        <item>25Cxx 8Kb (1024 bytes)</item>
-        <item>25Cxx 16Kb (2048 bytes)</item>
-        <item>25Cxx 32Kb (4096 bytes)</item>
-        <item>25Cxx 64Kb (8192 bytes)</item>
-        <item>25Cxx 128Kb (16384 bytes)</item>
-        <item>25Cxx 256Kb (32768 bytes)</item>
-        <item>25Cxx 512Kb (65536 bytes)</item>
-        <item>25Cxx 1Mb (131072 bytes)</item>
-        <item>25Cxx 2Mb (262144 bytes)</item>
-        <item>25Cxx 4Mb (524288 bytes)</item>
-        <!-- Flash NOR W25Qxx / MX25Lxx (indices 13-17) -->
-        <item>W25Q08 / MX25L80 — 1 MB (Flash NOR)</item>
-        <item>W25Q16 / MX25L16 — 2 MB (Flash NOR)</item>
-        <item>W25Q32 / MX25L32 — 4 MB (Flash NOR)</item>
-        <item>W25Q64 / MX25L64 — 8 MB (Flash NOR)</item>
-        <item>W25Q128 / MX25L128 — 16 MB (Flash NOR)</item>
+        <!-- EEPROM SPI 25LCxx (índices 0-12) -->
+        <item>25LC010A —  128 bytes   (1 Kbit)</item>
+        <item>25LC020A —  256 bytes   (2 Kbit)</item>
+        <item>25LC040A —  512 bytes   (4 Kbit)</item>
+        <item>25LC080  —  1 KB        (8 Kbit)</item>
+        <item>25LC160  —  2 KB        (16 Kbit)</item>
+        <item>25LC320  —  4 KB        (32 Kbit)</item>
+        <item>25LC640  —  8 KB        (64 Kbit)</item>
+        <item>25LC128  —  16 KB       (128 Kbit)</item>
+        <item>25LC256  —  32 KB       (256 Kbit)</item>
+        <item>25LC512  —  64 KB       (512 Kbit)</item>
+        <item>25LC1024 —  128 KB      (1 Mbit)</item>
+        <item>M95M02-DR — 256 KB      (2 Mbit)</item>
+        <item>M95M04-DR — 512 KB      (4 Mbit)</item>
+        <!-- Flash NOR W25Qxx / MX25Lxx (índices 13-17) -->
+        <item>W25Q08 / MX25L80  —  1 MB   (Flash NOR)</item>
+        <item>W25Q16 / MX25L16  —  2 MB   (Flash NOR)</item>
+        <item>W25Q32 / MX25L32  —  4 MB   (Flash NOR)</item>
+        <item>W25Q64 / MX25L64  —  8 MB   (Flash NOR)</item>
+        <item>W25Q128 / MX25L128 — 16 MB  (Flash NOR)</item>
     </string-array>
 
+    <!-- Connection / state strings -->
     <string name="connect">Conectar</string>
     <string name="disconnect">Desconectar</string>
     <string name="status_disconnected">Desconectado</string>
-    <string name="status_connected">Conectado</string>
+    <string name="status_connected">Conectado: 9600 bps</string>
     <string name="read_eeprom">Leer memoria</string>
     <string name="write_eeprom">Escribir memoria</string>
     <string name="erase_eeprom">Borrar memoria</string>
-    <string name="verify_eeprom">Verificar memoria</string>
+    <string name="verify_eeprom">Verificar</string>
     <string name="clear_log">Limpiar Log</string>
-    <string name="save_eeprom">Exportar</string>
+    <string name="save_eeprom">Exportar .bin / .hex</string>
     <string name="connection_instructions">Instrucciones de conexión</string>
+
+    <!-- Menu items -->
     <string name="menu_about">Acerca de</string>
     <string name="menu_pinout_pic">Pinout PIC 16F628A</string>
-    <string name="menu_i2c_conn">Conexiones I2C</string>
-    <string name="menu_spi_conn">Conexiones SPI</string>
+    <string name="menu_i2c_conn">Diagrama I2C</string>
+    <string name="menu_spi_conn">Diagrama SPI</string>
+    <string name="menu_firmware">Firmware (descargar)</string>
+    <string name="menu_privacy">Política de privacidad</string>
+
+    <!-- About strings -->
     <string name="about_title">Acerca de OTG Flash EEPROM</string>
-    <string name="about_message">OTG Flash EEPROM v3.0\n\nDesarrollado para programar memorias I2C y SPI usando un PIC 16F628A como puente.\n\nSoporta firmware PICMEM v3.</string>
+    <string name="about_version">Versión 1.0.1</string>
+    <string name="about_description">
+        Programador universal de memorias EEPROM I2C y Flash SPI
+        mediante un PIC16F628A como puente USB-Serial.
+    </string>
+    <string name="about_license_title">Licencia</string>
+    <string name="about_license_text">Apache License 2.0</string>
+    <string name="about_license_url">https://www.apache.org/licenses/LICENSE-2.0</string>
+    <string name="about_repo_url">https://github.com/Danielk10/Comunicador-OTG-TTL-Android</string>
+    <string name="about_dev_name">Daniel Diamon</string>
+    <string name="about_dev_email">danielpdiamon@gmail.com</string>
+
+    <!-- Firmware activity strings -->
+    <string name="firmware_title">Firmware PIC16F628A</string>
+    <string name="firmware_desc">PICMEM v3 — Compilado con SDCC\nOscilador INTRC 4 MHz · UART 9600 baud</string>
+    <string name="firmware_download_c">Guardar código fuente (.c)</string>
+    <string name="firmware_download_hex">Guardar firmware compilado (.hex)</string>
+    <string name="firmware_open_repo">Ver repositorio en GitHub</string>
+    <string name="firmware_compile_cmd">sdcc --std-c99 -mpic14 -p16f628a --use-non-free pic_firmware_v3.c</string>
+    <string name="firmware_saved_ok">Guardado en Descargas/rom/</string>
+    <string name="firmware_save_error">Error al guardar el archivo</string>
+
+    <!-- Privacy policy -->
+    <string name="privacy_title">Política de Privacidad</string>
+    <string name="privacy_url">https://todoandroid.42web.io/politica-de-privacidad.html</string>
 </resources>
