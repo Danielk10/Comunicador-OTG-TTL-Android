@@ -17,13 +17,13 @@
 - **✍️ Escritura de firmware**: Programa memorias con archivos .hex o .bin
 - **🔍 Visor hexadecimal en tiempo real**: Visualiza los datos mientras se leen/escriben
 - **💾 Exportación de archivos**: Guarda dumps en formato .bin y .hex
-- **🖥️ Terminal serial integrada**: Herramienta de diagnóstico y comunicación directa
 - **📊 Soporte múltiples memorias**: 
   - **EEPROMs I2C**: 24C01 hasta 24C512 (128 bytes a 256 KB / 2 Mbit)
   - **EEPROM SPI**: 25LC series (128 bytes a 4 MB)
   - **Flash SPI NOR**: W25Qxx, MX25Lxx (1 MB hasta 16 MB)
 - **🔌 Conexión USB OTG**: Compatible con adaptadores CH340, CP2102, FTDI
 - **📱 Interfaz intuitiva**: Diseño Material Design optimizado para Android
+- **🖥️ Uso versátil**: El hardware también puede usarse desde PC o cualquier terminal serial Android
 
 ### 🛠️ Arquitectura del Sistema
 
@@ -32,14 +32,15 @@ El proyecto utiliza una arquitectura de dos capas:
 1. **Aplicación Android (El Cerebro)**: 
    - Interfaz de usuario con Material Design
    - Procesamiento de archivos Intel HEX y binarios
-   - Comunicación USB OTG a 9600 baudios
+   - Comunicación USB OTG a 9600 baudios mediante [usb-serial-for-android](https://github.com/mik3y/usb-serial-for-android)
    - Gestión de permisos y almacenamiento
 
 2. **Firmware PIC16F628A (El Intérprete)**:
-   - Recibe comandos seriales desde Android
+   - Recibe comandos seriales desde Android o cualquier terminal
    - Traduce a señales I2C/SPI mediante bit-banging
    - Controla directamente las memorias EEPROM
    - LED indicador de estado de operación
+   - Protocolo binario documentado en [PICMEM_v3_Protocolo.md](PICMEM_v3_Protocolo.md)
 
 ---
 
@@ -64,6 +65,7 @@ El proyecto utiliza una arquitectura de dos capas:
 - **Android**: Versión 6.0 (API 23) o superior con soporte USB OTG
 - **Para compilar firmware**: SDCC (Small Device C Compiler) o C PIC Compiler
 - **Para programar PIC**: Cualquier programador compatible (PICkit, TL866, etc.)
+- **Terminal serial (opcional)**: [Serial USB Terminal](https://play.google.com/store/apps/details?id=de.kai_morich.serial_usb_terminal) para comunicación directa con el hardware
 
 ---
 
@@ -165,13 +167,21 @@ SDA    SCL
    - Presiona "Escribir Memoria"
    - Espera a que finalice (el LED del PIC parpadeará al completar)
 
-### Paso 4: Terminal Serial (Avanzado)
+### Paso 4: Uso Avanzado desde Terminal Serial
 
-Para usuarios avanzados, la aplicación incluye una terminal serial que permite enviar comandos directos al firmware PIC:
+Para usuarios avanzados o desarrollo, el hardware también puede controlarse directamente mediante comandos binarios desde cualquier terminal serial:
 
-- Abre el menú y selecciona "Terminal"
-- Configura el modo HEX para enviar comandos binarios
-- Consulta el documento `PICMEM_v3_Protocolo.md` para comandos disponibles
+**Desde Android:**
+- Descarga [Serial USB Terminal](https://play.google.com/store/apps/details?id=de.kai_morich.serial_usb_terminal)
+- Configura: 9600 baud, 8N1, modo HEX
+- Envía comandos según [PICMEM_v3_Protocolo.md](PICMEM_v3_Protocolo.md)
+
+**Desde PC:**
+- Usa cualquier terminal serial (PuTTY, Tera Term, minicom, etc.)
+- Configura: 9600 baud, 8 bits, sin paridad, 1 stop bit
+- Consulta el protocolo completo en [PICMEM_v3_Protocolo.md](PICMEM_v3_Protocolo.md)
+
+Esto permite integrar el hardware en scripts automatizados, sistemas embebidos o aplicaciones personalizadas.
 
 ---
 
@@ -188,6 +198,7 @@ Este documento incluye:
 - Ejemplos de uso desde terminal
 - Tiempos de operación estimados
 - Guía de resolución de problemas
+- Configuración de macros para terminales
 
 ### Código Fuente del Firmware
 
@@ -222,7 +233,6 @@ com.mobincube.pronosticos_parley_copy.sc_55UCEB/
 │   └── IntelHexFormat.java            # Parser formato Intel HEX
 ├── ui/
 │   ├── MainActivity.java              # Actividad principal
-│   ├── TerminalActivity.java          # Terminal serial
 │   ├── HexViewerHelper.java           # Visor hexadecimal
 │   └── LogHelper.java                 # Sistema de logging
 └── exception/
@@ -233,6 +243,7 @@ com.mobincube.pronosticos_parley_copy.sc_55UCEB/
 
 #### 1. Capa de Comunicación USB
 - **UsbSerialManager**: Maneja permisos, configuración 9600 8N1, lectura/escritura de bytes
+- Basado en [usb-serial-for-android](https://github.com/mik3y/usb-serial-for-android) v3.10.0
 
 #### 2. Capa de Protocolos
 - **I2cProtocol**: Calcula direcciones de bloque para memorias 24Cxx, gestiona page writes
@@ -245,7 +256,6 @@ com.mobincube.pronosticos_parley_copy.sc_55UCEB/
 #### 4. Capa de UI
 - **MainActivity**: Control de estado, progress bars, gestión de operaciones asíncronas
 - **HexViewerHelper**: Renderizado optimizado con throttling para evitar congelamiento
-- **TerminalActivity**: Envío/recepción en modo texto y hexadecimal
 
 ---
 
@@ -376,15 +386,18 @@ Con las siguientes condiciones:
 - **Código Fuente Firmware**: [pic_firmware_v3.c](pic_firmware_v3.c)
 - **Firmware Compilado**: [pic_firmware_v3.hex](pic_firmware_v3.hex)
 - **Repositorio GitHub**: [https://github.com/Danielk10/Comunicador-OTG-TTL-Android](https://github.com/Danielk10/Comunicador-OTG-TTL-Android)
+- **Librería USB Serial**: [usb-serial-for-android](https://github.com/mik3y/usb-serial-for-android) por mik3y
+- **Terminal Serial Android**: [Serial USB Terminal](https://play.google.com/store/apps/details?id=de.kai_morich.serial_usb_terminal)
 
 ---
 
 ## ⭐ Agradecimientos
 
-- Proyecto basado en **usb-serial-for-android** de mik3y
+- Librería USB serial: **[usb-serial-for-android](https://github.com/mik3y/usb-serial-for-android)** v3.10.0 por mik3y
 - Documentación de protocolo I2C: Microchip 24Cxx datasheets
 - Documentación de protocolo SPI: Winbond W25Qxx datasheets
 - Compilador SDCC: Small Device C Compiler Team
+- Terminal serial de referencia: Serial USB Terminal por Kai Morich
 
 ---
 
@@ -395,8 +408,9 @@ Con las siguientes condiciones:
 - ✅ Soporte EEPROM SPI (25LC series - hasta 4 MB)
 - ✅ Parser Intel HEX con validación
 - ✅ Visor hexadecimal en tiempo real
-- ✅ Terminal serial integrada
 - ✅ Exportación .bin y .hex
+- ✅ Protocolo binario documentado para uso desde cualquier terminal
+- ✅ Compatible con adaptadores USB-Serial comunes
 - 🔄 En desarrollo: Soporte Microwire (93Cxx)
 - 🔄 En desarrollo: Editor hexadecimal
 
