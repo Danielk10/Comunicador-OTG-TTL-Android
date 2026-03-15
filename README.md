@@ -15,7 +15,7 @@
 
 - **📖 Lectura de memorias**: Extrae el contenido completo de EEPROMs I2C y Flash SPI
 - **✍️ Escritura de firmware**: Programa memorias con archivos .hex o .bin
-- **🔍 Visor hexadecimal en tiempo real**: Visualiza los datos mientras se leen/escriben
+- **🔍 Visor hexadecimal en tiempo real**: Visualiza los datos mientras se leen
 - **💾 Exportación de archivos**: Guarda dumps en formato .bin y .hex
 - **📊 Soporte múltiples memorias**: 
   - **EEPROMs I2C**: 24C01 hasta 24C512 (128 bytes a 256 KB / 2 Mbit)
