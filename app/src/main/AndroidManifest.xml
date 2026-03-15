@@ -2,27 +2,40 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <!-- ── Requerimiento de hardware ────────────────────────────────────── -->
     <uses-feature
         android:glEsVersion="0x00020000"
         android:required="true" />
 
-    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <!-- ── Permisos ─────────────────────────────────────────────────────── -->
+
+    <!-- INTERNET: requerido para WebView (política de privacidad) y AdMob -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <!-- Red (AdMob, WebView) -->
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
+    <!-- USB OTG - imprescindible para la funcionalidad principal -->
+    <uses-permission android:name="android.permission.USB_PERMISSION" />
+    <uses-permission android:name="android.hardware.usb.host" />
+
+    <!-- Almacenamiento: guardar dumps y firmware (API ≤ 32 para lectura, ≤ 28 para escritura) -->
     <uses-permission
         android:name="android.permission.READ_EXTERNAL_STORAGE"
         android:maxSdkVersion="32" />
     <uses-permission
         android:name="android.permission.WRITE_EXTERNAL_STORAGE"
         android:maxSdkVersion="28" />
-    <uses-permission android:name="android.permission.INTERNET" />
-    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
-    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
+    <!-- Otros -->
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
-    <uses-permission android:name="android.permission.USB_PERMISSION" />
-    <uses-permission android:name="android.hardware.usb.host" />
 
+    <!-- ── Aplicación ───────────────────────────────────────────────────── -->
     <application
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
@@ -31,26 +44,50 @@
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/Theme.ComunicadorOTGTTLAndroid">
+        android:theme="@style/Theme.ComunicadorOTGTTLAndroid"
+        android:usesCleartextTraffic="false">
 
-        <activity android:name=".ui.HardwareInfoActivity" />
-
+        <!-- ── MainActivity (punto de entrada) ──────────────────────────── -->
         <activity
             android:name=".MainActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
-           <intent-filter>
+            <!-- Auto-conectar al enchufar un adaptador USB-Serial -->
+            <intent-filter>
                 <action android:name="android.hardware.usb.action.USB_DEVICE_ATTACHED" />
             </intent-filter>
             <meta-data
                 android:name="android.hardware.usb.action.USB_DEVICE_ATTACHED"
                 android:resource="@xml/device_filter" />
         </activity>
+
+        <!-- ── Diagramas de hardware ─────────────────────────────────────── -->
+        <activity
+            android:name=".ui.HardwareInfoActivity"
+            android:label="Hardware Info"
+            android:parentActivityName=".MainActivity" />
+
+        <!-- ── Acerca de ─────────────────────────────────────────────────── -->
+        <activity
+            android:name=".ui.AboutActivity"
+            android:label="@string/menu_about"
+            android:parentActivityName=".MainActivity" />
+
+        <!-- ── Firmware ──────────────────────────────────────────────────── -->
+        <activity
+            android:name=".ui.FirmwareActivity"
+            android:label="@string/firmware_title"
+            android:parentActivityName=".MainActivity" />
+
+        <!-- ── Política de privacidad (WebView) ─────────────────────────── -->
+        <activity
+            android:name=".ui.PrivacyPolicyActivity"
+            android:label="@string/privacy_title"
+            android:parentActivityName=".MainActivity" />
 
     </application>
 
