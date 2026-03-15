@@ -11,15 +11,15 @@ Programador universal de memorias EEPROM I2C/SPI usando PIC16F628A por USB OTG
 ## Descripción Larga (4000 caracteres máximo)
 
 ```
-📱 OTG FLASH EEPROM - PROGRAMADOR UNIVERSAL DE MEMORIAS
+OTG FLASH EEPROM - PROGRAMADOR UNIVERSAL DE MEMORIAS EEPROM
 
-¿Quieres leer, escribir y programar memorias EEPROM I2C y Flash SPI directamente desde tu Android? ¡OTG Flash EEPROM es la solución profesional que necesitas!
+¿Quieres leer, escribir y programar memorias EEPROM I2C y Flash SPI directamente desde tu Android? ¡OTG Flash EEPROM es la solución que necesitas!
 
 Convierte tu smartphone en un programador universal de memorias utilizando un microcontrolador PIC16F628A como puente de comunicación. Ideal para electrónica, reparación de dispositivos, desarrollo de firmware y proyectos DIY.
 
 ✨ CARACTERÍSTICAS PRINCIPALES
 
-✅ SOPORTE MÚPLE DE PROTOCOLOS
+✅ SOPORTE MUTIPLE DE PROTOCOLOS
 • Memorias I2C: Serie 24Cxx (24C01 hasta 24C512)
 • Flash SPI: Winbond W25Qxx, Macronix MX25Lxx
 • EEPROM SPI: Serie 25LCxx, ST M95xxx
@@ -32,19 +32,11 @@ Convierte tu smartphone en un programador universal de memorias utilizando un mi
 • Guardado en Descargas/rom/ de tu dispositivo
 • Volcado rápido con detección automática de tamaño
 
-✍️ ESCRITURA PROFESIONAL
+✍️ ESCRITURA
 • Soporta archivos Intel HEX (.hex) y binarios (.bin)
 • Validación automática de checksums
 • Escritura por páginas con verificación
 • Control de progreso en tiempo real
-• Respaldo automático antes de escribir
-
-🖥️ TERMINAL SERIAL INTEGRADA
-• Envío/recepción en modo texto y hexadecimal
-• Comandos directos al firmware PIC
-• Herramienta de diagnóstico avanzada
-• Escaneo de bus I2C
-• Lectura de JEDEC ID para Flash SPI
 
 🔧 CONSTRUYE TU PROPIO PROGRAMADOR
 
@@ -61,24 +53,20 @@ Componentes necesarios (bajo costo):
 Esquemas de conexión, código fuente y firmware compilado disponibles en:
 https://github.com/Danielk10/Comunicador-OTG-TTL-Android
 
-🛠️ ARQUITECTURA PROFESIONAL
+🛠️ ARQUITECTURA
 
-• Código 100% orientado a objetos en Java
 • Separación clara de capas (USB, Protocolos, Archivos, UI)
 • Parser Intel HEX con validación estricta
 • Gestión optimizada de memoria
 • Visor hex sin bloqueos con throttling
 • Material Design 3
-• Soporte para temas claro y oscuro
 
 💻 APLICACIONES PRÁCTICAS
 
-✓ Extracción de BIOS de placas base
 ✓ Backup de firmware de routers y dispositivos IoT
 ✓ Programación de memorias en sistemas embebidos
 ✓ Reparación de televisores y electrodomésticos
 ✓ Desarrollo de proyectos con Arduino/PIC
-✓ Clonación de configuraciones en productos seriales
 ✓ Recuperación de datos de memorias extraídas
 ✓ Educación en electrónica digital
 
@@ -89,14 +77,9 @@ https://github.com/Danielk10/Comunicador-OTG-TTL-Android
 • Adaptadores soportados: CH340, CH341, CP210x, FTDI FT232, PL2303
 • Velocidad de comunicación: 9600 baudios 8N1
 
-📚 DOCUMENTACIÓN COMPLETA
+📚 DOCUMENTACIÓN
 
-Documentación técnica detallada incluida:
-• Protocolo de comunicación binario completo
-• Especificación de comandos I2C y SPI
 • Diagramas de conexión del hardware
-• Guía de resolución de problemas
-• Ejemplos de uso desde terminal
 • Código fuente del firmware en C (SDCC)
 
 🔓 PROYECTO OPEN SOURCE
@@ -108,7 +91,7 @@ Esta aplicación es completamente de código abierto bajo licencia Apache 2.0:
 • Esquemas de conexión
 • Sin restricciones para uso comercial o educativo
 
-Repositorio GitHub:
+Ver en su repositorio GitHub:
 https://github.com/Danielk10/Comunicador-OTG-TTL-Android
 
 ⚠️ IMPORTANTE
@@ -119,25 +102,10 @@ https://github.com/Danielk10/Comunicador-OTG-TTL-Android
 • Verifica el voltaje de alimentación de tus memorias (3.3V o 5V)
 • Las memorias Flash SPI requieren borrado previo
 
-👨‍💻 DESARROLLADOR
-
-Desarrollado por Daniel Diamon
-Contacto: danielpdiamon@gmail.com
-
-🌟 CARACTERÍSTICAS PREMIUM (GRATIS)
-
-✅ Sin suscripciones
-✅ Sin compras dentro de la app
-✅ Sin límites de uso
-✅ Sin anuncios intrusivos
-✅ Actualizaciones gratuitas
-✅ Soporte comunitario en GitHub
-
 ¡Descarga ahora y comienza a programar memorias EEPROM desde tu Android!
 
 Perfecto para técnicos en electrónica, reparadores, estudiantes de ingeniería, makers y desarrolladores de hardware.
 
-#EEPROM #FlashMemory #PIC #Programmer #I2C #SPI #Electronics #DIY #Hardware #OTG #USBSerial #EmbeddedSystems #Firmware
 ```
 
 ---
