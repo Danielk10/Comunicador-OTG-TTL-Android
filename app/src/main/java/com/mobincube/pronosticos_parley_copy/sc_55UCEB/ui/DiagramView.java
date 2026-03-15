@@ -3,19 +3,72 @@ package com.mobincube.pronosticos_parley_copy.sc_55UCEB.ui;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.Paint;
+import android.graphics.RectF;
+import android.graphics.Typeface;
 import android.util.AttributeSet;
 import android.view.View;
 
-import com.mobincube.pronosticos_parley_copy.sc_55UCEB.graficos.Graficos2D;
-import com.mobincube.pronosticos_parley_copy.sc_55UCEB.graficos.Textura2D;
-import com.mobincube.pronosticos_parley_copy.sc_55UCEB.nucleo.Graficos;
-import com.mobincube.pronosticos_parley_copy.sc_55UCEB.nucleo.Textura;
-
+/**
+ * DiagramView v3 — Dibuja directamente sobre Canvas de Android.
+ *
+ * Correcciones respecto a la versión anterior:
+ *  • Eliminada dependencia de Graficos2D / Textura2D (usaba doble buffer innecesario).
+ *  • Pin 16 corregido: era "OSC2" → ahora "RA7"  (oscilador INTRC libera RA6/RA7).
+ *  • Pin 10 correcto: "RB4  LED ★" (indicador de estado).
+ *  • Diagrama I2C: etiquetas SDA/SCL en pines correctos (SDA=RA0/P17, SCL=RA1/P18).
+ *  • Diagrama SPI: etiquetas CS/SCK/MISO/MOSI correctas según firmware v3.
+ *  • Diagrama SPI: /WP y /HOLD claramente indicados con conexión a VCC.
+ *  • Colores diferenciados por señal para facilitar identificación visual.
+ *
+ * Pinout PIC16F628A DIP-18 (firmware PICMEM v3):
+ *   Pin  1 = RA2   → CS   (SPI, salida)
+ *   Pin  2 = RA3   → SCK  (SPI, salida)
+ *   Pin  3 = RA4   → libre
+ *   Pin  4 = RA5   → MISO (SPI, entrada) [MCLRE=0 → RA5 es I/O]
+ *   Pin  5 = VSS   → GND
+ *   Pin  6 = RB0   → libre
+ *   Pin  7 = RB1   → RX UART (entrada)
+ *   Pin  8 = RB2   → TX UART (salida)
+ *   Pin  9 = RB3   → libre
+ *   Pin 10 = RB4   → LED indicador (salida)
+ *   Pin 11 = RB5   → libre
+ *   Pin 12 = RB6   → libre
+ *   Pin 13 = RB7   → libre
+ *   Pin 14 = VDD   → +5V
+ *   Pin 15 = RA6   → MOSI (SPI, salida)  [INTRC → RA6 es I/O]
+ *   Pin 16 = RA7   → libre               [INTRC → RA7 es I/O]
+ *   Pin 17 = RA0   → SDA  (I2C, open-drain)
+ *   Pin 18 = RA1   → SCL  (I2C, open-drain)
+ */
 public class DiagramView extends View {
-    private Graficos graficos;
-    private Textura textura;
-    private int type = 0; // 0: PIC, 1: I2C, 2: SPI
 
+    // ── Tipo de diagrama ──────────────────────────────────────────────────
+    private int type = 0; // 0=PIC Pinout, 1=I2C, 2=SPI
+
+    // ── Colores de señal ──────────────────────────────────────────────────
+    static final int C_SDA   = 0xFFFF8C00; // Naranja  – SDA I2C
+    static final int C_SCL   = 0xFF00C853; // Verde    – SCL I2C
+    static final int C_CS    = 0xFFFF6D00; // Naranja oscuro – /CS SPI
+    static final int C_SCK   = 0xFF00BFA5; // Verde azulado  – SCK SPI
+    static final int C_MOSI  = 0xFF2979FF; // Azul     – MOSI SPI
+    static final int C_MISO  = 0xFFAA00FF; // Morado   – MISO SPI
+    static final int C_VCC   = 0xFFF44336; // Rojo     – VCC/+5V
+    static final int C_GND   = 0xFF546E7A; // Gris-azul– GND
+    static final int C_UART  = 0xFFFFEB3B; // Amarillo – UART RX/TX
+    static final int C_LED   = 0xFFFFD700; // Dorado   – LED indicador
+    static final int C_NC    = 0xFF444444; // Gris oscuro – sin función asignada
+    static final int C_TITLE = 0xFF58A6FF; // Azul claro  – títulos
+    static final int C_TEXT  = 0xFFCDD9E5; // Blanco humo – texto general
+    static final int C_SUB   = 0xFF8B949E; // Gris       – subtítulos
+    static final int C_CHIP  = 0xFF161B22; // Casi negro – cuerpo del chip
+    static final int C_BORD  = 0xFF4A90D9; // Azul       – borde del chip
+    static final int C_PIN   = 0xFFA0A8B0; // Metal      – pin metálico
+    static final int C_ROW1  = 0xFF161B22; // Filas alternas
+    static final int C_ROW2  = 0xFF0D1117;
+    static final int C_HDRB  = 0xFF1C2128; // Fondo encabezado de sección
+
+    // ── Constructor ───────────────────────────────────────────────────────
     public DiagramView(Context context) {
         super(context);
     }
@@ -24,398 +77,413 @@ public class DiagramView extends View {
         super(context, attrs);
     }
 
+    // ── API pública ───────────────────────────────────────────────────────
     public void setType(int type) {
         this.type = type;
         invalidate();
     }
 
+    // ── Medida mínima de altura ───────────────────────────────────────────
+    @Override
+    protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+        super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+        int minH;
+        switch (type) {
+            case 1:  minH = (int) dp(720); break;
+            case 2:  minH = (int) dp(760); break;
+            default: minH = (int) dp(620); break;
+        }
+        int h = Math.max(getMeasuredHeight(), minH);
+        setMeasuredDimension(getMeasuredWidth(), h);
+    }
+
+    // ── onDraw ─────────────────────────────────────────────────────────────
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
-        
-        int width = getWidth();
-        int height = getHeight();
-        
-        if (width <= 0 || height <= 0) return;
-
-        // Inicializar el sistema gráfico si no existe o si cambió el tamaño
-        if (textura == null || textura.getAncho() != width || textura.getAlto() != height) {
-            textura = new Textura2D(width, height, Graficos.FormatoTextura.ARGB8888);
-            graficos = new Graficos2D(textura);
-        }
-
-        graficos.limpiar(Color.parseColor("#F8F9FA")); // Tema claro profesional
-        
+        canvas.drawColor(0xFF0D1117); // fondo oscuro uniforme
         switch (type) {
-            case 0:
-                dibujarPinoutPIC(graficos);
-                break;
-            case 1:
-                dibujarI2C(graficos);
-                break;
-            case 2:
-                dibujarSPI(graficos);
-                break;
-        }
-
-        // Volcar el bitmap de la textura al canvas de Android
-        canvas.drawBitmap(textura.getBipmap(), 0, 0, null);
-    }
-
-    private void dibujarPinoutPIC(Graficos g) {
-        float centerX = g.getAncho() / 2;
-        float centerY = g.getAlto() / 2;
-        
-        int colorText = Color.parseColor("#24292F");
-        g.getLapiz().setTextSize(26);
-        g.dibujarTexto("PINOUT PIC 16F628A (DIP-18)", centerX - 180, 60, colorText);
-        
-        String[] left = {
-            "1: RA2 (CS)", "2: RA3 (SCK)", "3: RA4", "4: RA5 (MISO)", "5: VSS (GND)", 
-            "6: RB0", "7: RB1 (RX)", "8: RB2 (TX)", "9: RB3"
-        };
-        String[] right = {
-            "18: RA1 (SCL)", "17: RA0 (SDA)", "16: OSC2", "15: RA6 (MOSI)", "14: VDD (VCC)", 
-            "13: RB7", "12: RB6", "11: RB5", "10: RB4"
-        };
-
-        dibujarChipDIP(g, centerX, centerY, 18, "PIC 16F628A", left, right);
-    }
-
-    private void dibujarCajaInstrucciones(Graficos g, float x, float y, float w, String title, String[] lines) {
-        int colorBox = Color.parseColor("#EEFFFFFF"); // Semi-transparent white
-        int colorBorder = Color.parseColor("#D0D7DE");
-        int colorTitle = Color.parseColor("#0969DA");
-        int colorText = Color.parseColor("#24292F");
-        
-        float padding = 20;
-        float lineH = 28;
-        float boxH = padding * 2 + lines.length * lineH + 30;
-        
-        // Shadow
-        g.dibujarRectangulo(x + 5, y + 5, w, boxH, Color.argb(30, 0, 0, 0));
-        // Box
-        g.dibujarRectangulo(x, y, w, boxH, colorBox);
-        // Border
-        g.getLapiz().setStyle(android.graphics.Paint.Style.STROKE);
-        g.getLapiz().setStrokeWidth(2);
-        g.dibujarRectangulo(x, y, w, boxH, colorBorder);
-        g.getLapiz().setStyle(android.graphics.Paint.Style.FILL);
-        
-        // Title
-        g.getLapiz().setTextSize(20);
-        g.getLapiz().setFakeBoldText(true);
-        g.dibujarTexto(title, x + padding, y + padding + 15, colorTitle);
-        g.getLapiz().setFakeBoldText(false);
-        
-        // Lines
-        g.getLapiz().setTextSize(18);
-        for (int i = 0; i < lines.length; i++) {
-            g.dibujarTexto(lines[i], x + padding, y + padding + 45 + (i * lineH), colorText);
+            case 0: drawPinout(canvas); break;
+            case 1: drawI2C(canvas);   break;
+            case 2: drawSPI(canvas);   break;
         }
     }
 
-    private void dibujarChipDIP(Graficos g, float x, float y, int numPins, String label, String[] leftLabels, String[] rightLabels) {
-        int halfPins = numPins / 2;
-        float pinSpacing = 45;
-        float chipW = 140;
-        float chipH = pinSpacing * halfPins + 40;
-        float startY = y - chipH / 2;
-        
-        int colorChip = Color.parseColor("#161B22");
-        int colorPin = Color.parseColor("#8B949E");
-        int colorText = Color.parseColor("#24292F");
-        int colorLabel = Color.parseColor("#0969DA");
-        
-        // Sombra suave
-        g.dibujarRectangulo(x - chipW/2 + 5, startY + 5, chipW, chipH, Color.LTGRAY);
-        // Cuerpo del chip (negro)
-        g.dibujarRectangulo(x - chipW/2, startY, chipW, chipH, colorChip);
-        // Notch
-        g.dibujarRectangulo(x - 20, startY, 40, 15, Color.BLACK);
-        
-        g.getLapiz().setTextSize(18);
-        for (int i = 0; i < halfPins; i++) {
-            float py = startY + 35 + (i * pinSpacing);
-            // Pines metálicos
-            g.dibujarRectangulo(x - chipW/2 - 20, py - 6, 20, 12, colorPin);
-            g.dibujarRectangulo(x + chipW/2, py - 6, 20, 12, colorPin);
-            
-            // Labels
-            if (leftLabels != null && i < leftLabels.length) {
-                g.dibujarTexto(leftLabels[i], x - chipW/2 - 160, py + 6, colorText);
-            }
-            if (rightLabels != null && i < rightLabels.length) {
-                g.dibujarTexto(rightLabels[i], x + chipW/2 + 30, py + 6, colorText);
-            }
-        }
-        
-        g.getLapiz().setTextSize(16);
-        g.dibujarTexto(label, x - 50, y + chipH/2 + 25, colorLabel);
-    }
+    // ======================================================================
+    // TIPO 0 — PIC16F628A DIP-18 Pinout
+    // ======================================================================
+    private void drawPinout(Canvas canvas) {
+        float W = getWidth();
+        float cx = W / 2f;
+        float y = dp(10);
 
-    private void dibujarAdaptadorTTL(Graficos g, float x, float y) {
-        int colorPCB = Color.parseColor("#F1F5F9"); // Light gray background
-        int colorBorder = Color.parseColor("#94A3B8");
-        int colorText = Color.parseColor("#334155");
-        int colorPin = Color.parseColor("#64748B");
+        // Título
+        drawCenteredText(canvas, "PIC16F628A  —  DIP-18 Pinout", cx, y + dp(22),
+                makeText(17, C_TITLE, true));
+        drawCenteredText(canvas, "Firmware PICMEM v3  ·  INTRC 4 MHz  ·  UART 9600 baud",
+                cx, y + dp(40), makeText(9, C_SUB, false));
 
-        // Main Body
-        g.dibujarRectangulo(x - 80, y - 60, 160, 120, colorPCB);
-        g.getLapiz().setStyle(android.graphics.Paint.Style.STROKE);
-        g.getLapiz().setStrokeWidth(2);
-        g.dibujarRectangulo(x - 80, y - 60, 160, 120, colorBorder);
-        g.getLapiz().setStyle(android.graphics.Paint.Style.FILL);
+        // ── Cuerpo del chip ──────────────────────────────────────────────
+        float chipW  = dp(68);
+        float chipH  = dp(240);
+        float chipT  = y + dp(55);
+        float chipL  = cx - chipW / 2f;
+        float chipR  = cx + chipW / 2f;
 
-        // Label
-        g.getLapiz().setTextSize(18);
-        g.getLapiz().setFakeBoldText(true);
-        g.dibujarTexto("ADAPTADOR TTL", x - 65, y - 30, colorText);
-        g.getLapiz().setFakeBoldText(false);
+        canvas.drawRoundRect(new RectF(chipL, chipT, chipR, chipT + chipH),
+                dp(5), dp(5), fill(C_CHIP));
+        canvas.drawRoundRect(new RectF(chipL, chipT, chipR, chipT + chipH),
+                dp(5), dp(5), stroke(C_BORD, 1.5f));
+        // Muesca superior
+        canvas.drawArc(new RectF(cx - dp(10), chipT - dp(6), cx + dp(10), chipT + dp(6)),
+                0, -180, false, stroke(C_BORD, 1.5f));
+        // Etiqueta chip
+        drawCenteredText(canvas, "PIC16F628A", cx, chipT + chipH * 0.44f,
+                makeText(13, C_TEXT, true));
+        drawCenteredText(canvas, "DIP-18", cx, chipT + chipH * 0.57f,
+                makeText(9, C_TITLE, false));
 
-        // Header Pins
-        String[] labels = {"DTR", "RXD", "TXD", "VCC", "CTS", "GND"};
-        float pinX = x + 80;
-        float startY = y - 45;
-        float stepY = 18;
-
-        for (int i = 0; i < 6; i++) {
-            float py = startY + (i * stepY);
-            // Pin line
-            g.dibujarLinea(pinX, py, pinX + 20, py, colorPin);
-            // Label
-            g.getLapiz().setTextSize(14);
-            g.dibujarTexto(labels[i], pinX - 35, py + 5, colorText);
-        }
-    }
-
-    private void dibujarI2C(Graficos g) {
-        float w = g.getAncho();
-        float centerX = w / 2;
-        
-        int colorText = Color.parseColor("#24292F");
-        int colorSDA = Color.parseColor("#D97706"); // Amber
-        int colorSCL = Color.parseColor("#059669"); // Emerald
-        int colorPower = Color.parseColor("#DC2626"); // Red
-        int colorGND = Color.parseColor("#1F2937"); // Dark gray
-        int colorResistor = Color.parseColor("#92400E");
-        int colorComment = Color.parseColor("#4B5563");
-        float adapterX = 150;
-        float adapterY = 150;
-        float picX = w / 4 + 50;
-        float memX = 3 * w / 4 - 50;
-        float chipsY = 800;
-        float boxX = w - 450;
-        float boxY = 120;
-
-        // Comprobación de protocolo (Firmeare v3): SDA=RA0(P17), SCL=RA1(P18)
-        
-        // Componentes simplificados
-        dibujarAdaptadorTTL(g, adapterX, adapterY);
-        dibujarChipDIP(g, picX, chipsY, 18, "PIC 16F628A", null, null);
-        dibujarChipDIP(g, memX, chipsY, 8, "EEPROM 24xx", null, null);
-
-        // Instrucciones en caja (Zona segura)
-        String[] inst = {
-            "• RX (PIC 7) <-> TXD Adaptador",
-            "• TX (PIC 8) <-> RXD Adaptador",
-            "• SDA (PIC 17) <-> PIN 5 (MEM)",
-            "• SCL (PIC 18) <-> PIN 6 (MEM)",
-            "• Resistencias 4.7kΩ de SDA/SCL a VCC",
-            "• VCC y GND comunes a todos"
+        // ── Pines ────────────────────────────────────────────────────────
+        // Lado izquierdo: pines 1-9 (arriba→abajo)
+        String[] lLabel = {
+            "RA2  CS-SPI",
+            "RA3  SCK-SPI",
+            "RA4",
+            "RA5  MISO-SPI",
+            "VSS  GND",
+            "RB0",
+            "RB1  RX-UART",
+            "RB2  TX-UART",
+            "RB3"
         };
-        dibujarCajaInstrucciones(g, boxX, boxY, 400, "PROTOCOLO I2C", inst);
+        int[] lColor = {C_CS, C_SCK, C_NC, C_MISO, C_GND, C_NC, C_UART, C_UART, C_NC};
+        int[] lNum   = {1, 2, 3, 4, 5, 6, 7, 8, 9};
 
-        // Coordenadas calculadas
-        float adapterPinX = adapterX + 80;
-        float adapterTX_Y = adapterY - 45 + 2 * 18;
-        float adapterRX_Y = adapterY - 45 + 1 * 18;
-        float adapterVCC_Y = adapterY - 45 + 3 * 18;
-        float adapterGND_Y = adapterY - 45 + 5 * 18;
+        // Lado derecho: pines 18-10 (arriba→abajo)
+        String[] rLabel = {
+            "SCL-I2C  RA1",
+            "SDA-I2C  RA0",
+            "RA7",
+            "MOSI-SPI  RA6",
+            "+5V  VDD",
+            "RB7",
+            "RB6",
+            "RB5",
+            "LED★  RB4"
+        };
+        int[] rColor = {C_SCL, C_SDA, C_NC, C_MOSI, C_VCC, C_NC, C_NC, C_NC, C_LED};
+        int[] rNum   = {18, 17, 16, 15, 14, 13, 12, 11, 10};
 
-        float picR_X = picX + 70 + 20;
-        float picL_X = picX - 70 - 20;
-        float memR_X = memX + 70 + 20;
-        float memL_X = memX - 70 - 20;
+        float pinSp  = chipH / 9f;
+        float wLen   = dp(20);
+        float tSz    = Math.min(sp(8f), pinSp * 0.38f);
+        Paint tPaint = makeText(0, C_TEXT, false);
+        tPaint.setTextSize(tSz);
+        tPaint.setTypeface(Typeface.MONOSPACE);
+        Paint numPaint = makeText(0, 0xFFCCCCCC, true);
+        numPaint.setTextSize(tSz * 0.85f);
 
-        // Pines PIC (DIP-18)
-        float startY_PIC = chipsY - 180;
-        float picP17y = startY_PIC + 1 * 45; // Pin 17 is next to Pin 18 (index 16)
-        float picP18y = startY_PIC + 0 * 45; // Pin 18 is at top right (index 17)
-        float picP7y = startY_PIC + 6 * 45;  // Pin 7
-        float picP8y = startY_PIC + 7 * 45;  // Pin 8
-        float picP14y = startY_PIC + 4 * 45; // VDD (Pin 14)
-        float picP5y = startY_PIC + 4 * 45;  // VSS (Pin 5) - Left side index 4
+        for (int i = 0; i < 9; i++) {
+            float pinY = chipT + pinSp * (i + 0.5f);
 
-        // Pines MEM (DIP-8)
-        float startY_MEM = chipsY - 67.5f;
-        // Index 0: P1, 1: P2, 2: P3, 3: P4 (Left)
-        // Index 4: P8, 5: P7, 6: P6, 7: P5 (Right)
-        float memP8y = startY_MEM + 0 * 45; // VCC
-        float memP6y = startY_MEM + 2 * 45; // SCL
-        float memP5y_real = startY_MEM + 3 * 45; // SDA
-        
-        float memP4y = startY_MEM + 3 * 45; // VSS (Pin 4) - Left side index 3
+            // ── izquierda
+            canvas.drawLine(chipL - wLen, pinY, chipL, pinY, stroke(lColor[i], 2.5f));
+            canvas.drawRect(chipL - wLen - dp(5), pinY - dp(3),
+                    chipL - wLen, pinY + dp(3), fill(C_PIN));
+            numPaint.setTextAlign(Paint.Align.RIGHT);
+            canvas.drawText(String.valueOf(lNum[i]),
+                    chipL - wLen - dp(8), pinY + tSz * 0.37f, numPaint);
+            tPaint.setColor(lColor[i]);
+            tPaint.setTextAlign(Paint.Align.RIGHT);
+            canvas.drawText(lLabel[i],
+                    chipL - wLen - dp(20), pinY + tSz * 0.37f, tPaint);
 
-        // 1. ALIMENTACIÓN (VCC/GND)
-        g.dibujarLinea(adapterPinX + 20, adapterGND_Y, 50, adapterGND_Y, colorGND);
-        g.dibujarLinea(50, adapterGND_Y, 50, chipsY + 150, colorGND);
-        g.dibujarLinea(50, chipsY + 150, picL_X, picP5y, colorGND); // GND loop
-        g.dibujarLinea(50, chipsY + 150, memL_X, memP4y, colorGND);
+            // ── derecha
+            canvas.drawLine(chipR, pinY, chipR + wLen, pinY, stroke(rColor[i], 2.5f));
+            canvas.drawRect(chipR + wLen, pinY - dp(3),
+                    chipR + wLen + dp(5), pinY + dp(3), fill(C_PIN));
+            numPaint.setTextAlign(Paint.Align.LEFT);
+            canvas.drawText(String.valueOf(rNum[i]),
+                    chipR + wLen + dp(8), pinY + tSz * 0.37f, numPaint);
+            tPaint.setColor(rColor[i]);
+            tPaint.setTextAlign(Paint.Align.LEFT);
+            canvas.drawText(rLabel[i],
+                    chipR + wLen + dp(20), pinY + tSz * 0.37f, tPaint);
+        }
 
-        g.dibujarLinea(adapterPinX + 20, adapterVCC_Y, 30, adapterVCC_Y, colorPower);
-        g.dibujarLinea(30, adapterVCC_Y, 30, chipsY + 170, colorPower);
-        g.dibujarLinea(30, chipsY + 170, picR_X, picP14y, colorPower);
-        g.dibujarLinea(30, chipsY + 170, memR_X, memP8y, colorPower);
-
-        // 2. COMUNICACIÓN USB (RX/TX)
-        // TX Adaptador -> RX PIC (P7)
-        g.dibujarLinea(adapterPinX + 20, adapterTX_Y, adapterPinX + 60, adapterTX_Y, Color.BLACK);
-        g.dibujarLinea(adapterPinX + 60, adapterTX_Y, adapterPinX + 60, chipsY + 120, Color.BLACK);
-        g.dibujarLinea(adapterPinX + 60, chipsY + 120, picL_X, picP7y, Color.BLACK);
-
-        // RX Adaptador -> TX PIC (P8)
-        g.dibujarLinea(adapterPinX + 20, adapterRX_Y, adapterPinX + 80, adapterRX_Y, Color.BLACK);
-        g.dibujarLinea(adapterPinX + 80, adapterRX_Y, adapterPinX + 80, chipsY + 140, Color.BLACK);
-        g.dibujarLinea(adapterPinX + 80, chipsY + 140, picL_X, picP8y, Color.BLACK);
-
-        // 3. I2C SIGNALS
-        // SCL (P18 -> P6)
-        g.dibujarLinea(picR_X, picP18y, w - 50, picP18y, colorSCL);
-        g.dibujarLinea(w - 50, picP18y, w - 50, memP6y, colorSCL);
-        g.dibujarLinea(w - 50, memP6y, memR_X, memP6y, colorSCL);
-        
-        // SDA (P17 -> P5)
-        g.dibujarLinea(picR_X, picP17y, w - 80, picP17y, colorSDA);
-        g.dibujarLinea(w - 80, picP17y, w - 80, memP5y_real, colorSDA);
-        g.dibujarLinea(w - 80, memP5y_real, memR_X, memP5y_real, colorSDA);
-
-        // Pull-ups (Esquemáticos)
-        float resY = chipsY - 120;
-        g.dibujarRectangulo(w - 85, resY, 10, 30, colorResistor);
-        g.dibujarRectangulo(w - 55, resY, 10, 30, colorResistor);
-        g.dibujarLinea(w - 80, picP17y, w - 80, resY + 30, colorSDA);
-        g.dibujarLinea(w - 80, resY, w - 80, adapterVCC_Y, colorPower);
-        g.dibujarLinea(w - 50, picP18y, w - 50, resY + 30, colorSCL);
-        g.dibujarLinea(w - 50, resY, w - 50, adapterVCC_Y, colorPower);
+        // ── Leyenda de colores
+        float legY = chipT + chipH + dp(18);
+        drawLegend(canvas, dp(12), legY, W - dp(12));
     }
 
-    private void dibujarSPI(Graficos g) {
-        float w = g.getAncho();
-        float centerX = w / 2;
-        
-        int colorText = Color.parseColor("#334155");
-        int colorCS = Color.parseColor("#EA580C");
-        int colorSCK = Color.parseColor("#16A34A");
-        int colorMOSI = Color.parseColor("#2563EB");
-        int colorMISO = Color.parseColor("#9333EA");
-        int colorPower = Color.parseColor("#DC2626");
-        int colorGND = Color.parseColor("#1F2937");
-        int colorAlert = Color.parseColor("#991B1B");
+    // ======================================================================
+    // TIPO 1 — Conexiones I2C
+    // ======================================================================
+    private void drawI2C(Canvas canvas) {
+        float W  = getWidth();
+        float cx = W / 2f;
+        float y  = dp(10);
 
-        g.getLapiz().setTextSize(24);
-        g.getLapiz().setFakeBoldText(true);
-        g.dibujarTexto("ESQUEMA SPI (PICMASTER)", centerX - 150, 60, colorText);
-        g.getLapiz().setFakeBoldText(false);
-        
-        float adapterX = 150;
-        float adapterY = 150;
-        float picX = w / 4 + 50;
-        float memX = 3 * w / 4 - 50;
-        float chipsY = 800;
-        float boxX = w - 450;
-        float boxY = 120;
+        drawCenteredText(canvas, "Conexiones I2C", cx, y + dp(22),
+                makeText(16, C_TITLE, true));
+        drawCenteredText(canvas, "PIC16F628A ↔ EEPROM 24Cxx  (bus ~50 kHz bit-banging)",
+                cx, y + dp(40), makeText(9, C_SUB, false));
+        y += dp(50);
 
-        // Protocolo (Firmware v3): CS=RA2(P1), SCK=RA3(P2), MISO=RA5(P4), MOSI=RA6(P15)
-
-        dibujarAdaptadorTTL(g, adapterX, adapterY);
-        dibujarChipDIP(g, picX, chipsY, 18, "PIC Master", null, null);
-        dibujarChipDIP(g, memX, chipsY, 8, "EEPROM 25xx", null, null);
-
-        String[] inst = {
-            "• CS (PIC 1) <-> PIN 1 (MEM)",
-            "• SCK (PIC 2) <-> PIN 6 (MEM)",
-            "• MISO (PIC 4) <-> PIN 2 (MEM)",
-            "• MOSI (PIC 15) <-> PIN 5 (MEM)",
-            "• P3(WP) / P7(HOLD) a VCC",
-            "• GND y VCC comunes"
+        // ── Tabla de conexiones ──────────────────────────────────────────
+        y = drawSectionHeader(canvas, dp(10), y, W - dp(10), "Tabla de conexiones");
+        Object[][] conns = {
+            {"Adaptador TX",      "→  PIC RB1 / Pin 7  (RX)",  C_UART},
+            {"Adaptador RX",      "←  PIC RB2 / Pin 8  (TX)",  C_UART},
+            {"PIC RA0 / Pin 17",  "↔  SDA → Pin 5 EEPROM",     C_SDA },
+            {"PIC RA1 / Pin 18",  "↔  SCL → Pin 6 EEPROM",     C_SCL },
+            {"PIC VDD / Pin 14",  "→  VCC → Pin 8 EEPROM",     C_VCC },
+            {"PIC VSS / Pin 5",   "→  GND → Pin 4 EEPROM",     C_GND },
+            {"4.7 kΩ Pull-up",    "SDA → VCC  (OBLIGATORIO)",  C_SDA },
+            {"4.7 kΩ Pull-up",    "SCL → VCC  (OBLIGATORIO)",  C_SCL },
+            {"EEPROM Pin 1,2,3",  "A0, A1, A2 → GND",          C_GND },
+            {"EEPROM Pin 7",      "WP → GND   (escritura ON)",  C_GND },
         };
-        dibujarCajaInstrucciones(g, boxX, boxY, 400, "PROTOCOLO SPI", inst);
+        y = drawConnTable(canvas, dp(10), y, W - dp(10), conns);
 
-        // Coordenadas
-        float adapterPinX = adapterX + 80;
-        float adapterTX_Y = adapterY - 45 + 2 * 18;
-        float adapterRX_Y = adapterY - 45 + 1 * 18;
-        float adapterVCC_Y = adapterY - 45 + 3 * 18;
-        float adapterGND_Y = adapterY - 45 + 5 * 18;
+        // ── Chip DIP-8 EEPROM 24Cxx ──────────────────────────────────────
+        y += dp(12);
+        y = drawSectionHeader(canvas, dp(10), y, W - dp(10),
+                "EEPROM 24Cxx — DIP-8 / SOP-8");
+        y = drawChip8(canvas, W, y,
+                new String[]{"A0  (1)", "A1  (2)", "A2  (3)", "GND (4)"},
+                new String[]{"VCC (8)", "WP  (7)", "SCL (6)", "SDA (5)"},
+                new int[]   {C_NC,      C_NC,      C_NC,      C_GND    },
+                new int[]   {C_VCC,     C_GND,     C_SCL,     C_SDA    },
+                "24Cxx EEPROM");
 
-        float picR_X = picX + 70 + 20;
-        float picL_X = picX - 70 - 20;
-        float memR_X = memX + 70 + 20;
-        float memL_X = memX - 70 - 20;
+        // ── Notas ─────────────────────────────────────────────────────────
+        y += dp(12);
+        y = drawSectionHeader(canvas, dp(10), y, W - dp(10), "⚠  Notas importantes");
+        String[] notes = {
+            "• Sin Pull-ups 4.7 kΩ en SDA/SCL el bus I2C NO funciona",
+            "• A0-A1-A2 a GND → dirección base del chip = 0xA0",
+            "• TX del PIC → RX del adaptador (cables CRUZADOS)",
+            "• Verificar voltaje de la EEPROM (3.3 V ó 5 V según modelo)",
+            "• 24C01-24C16: addr_len=1   |   24C32-24C512: addr_len=2",
+        };
+        drawNotes(canvas, dp(10), y, notes);
+    }
 
-        float startY_PIC = chipsY - 180;
-        float picP1y = startY_PIC + 0 * 45; // Pin 1
-        float picP2y = startY_PIC + 1 * 45; // Pin 2
-        float picP4y = startY_PIC + 3 * 45; // Pin 4
-        float picP15y = startY_PIC + 3 * 45; // Pin 15 (Right side index 3)
-        float picP14y = startY_PIC + 4 * 45; // VDD (Pin 14)
-        float picP5y = startY_PIC + 4 * 45;  // VSS (Pin 5)
+    // ======================================================================
+    // TIPO 2 — Conexiones SPI
+    // ======================================================================
+    private void drawSPI(Canvas canvas) {
+        float W  = getWidth();
+        float cx = W / 2f;
+        float y  = dp(10);
 
-        float startY_MEM = chipsY - 67.5f;
-        float memP1y = startY_MEM + 0 * 45; // Pin 1
-        float memP2y = startY_MEM + 1 * 45; // Pin 2
-        float memP3y = startY_MEM + 2 * 45; // Pin 3 (WP)
-        float memP4y = startY_MEM + 3 * 45; // Pin 4 (GND)
-        float memP8y = startY_MEM + 0 * 45; // Pin 8 (VCC)
-        float memP7y = startY_MEM + 1 * 45; // Pin 7 (HOLD)
-        float memP6y = startY_MEM + 2 * 45; // Pin 6 (SCK)
-        float memP5y = startY_MEM + 3 * 45; // Pin 5 (MOSI)
+        drawCenteredText(canvas, "Conexiones SPI", cx, y + dp(22),
+                makeText(16, C_TITLE, true));
+        drawCenteredText(canvas, "PIC16F628A ↔ Flash W25Qxx / EEPROM 25LCxx  (Modo 0, ~100 kHz)",
+                cx, y + dp(40), makeText(9, C_SUB, false));
+        y += dp(50);
 
-        // 1. ALIMENTACIÓN
-        g.dibujarLinea(adapterPinX + 20, adapterGND_Y, 50, adapterGND_Y, colorGND);
-        g.dibujarLinea(50, adapterGND_Y, 50, chipsY + 150, colorGND);
-        g.dibujarLinea(50, chipsY + 150, picL_X, picP5y, colorGND);
-        g.dibujarLinea(50, chipsY + 150, memL_X, memP4y, colorGND);
+        // ── Tabla de conexiones ──────────────────────────────────────────
+        y = drawSectionHeader(canvas, dp(10), y, W - dp(10), "Tabla de conexiones");
+        Object[][] conns = {
+            {"Adaptador TX",      "→  PIC RB1 / Pin 7  (RX)",        C_UART},
+            {"Adaptador RX",      "←  PIC RB2 / Pin 8  (TX)",        C_UART},
+            {"PIC RA2 / Pin 1",   "→  /CS   → Pin 1 Flash  (activo bajo)", C_CS  },
+            {"PIC RA3 / Pin 2",   "→  CLK   → Pin 6 Flash",          C_SCK },
+            {"PIC RA5 / Pin 4",   "←  DO    ← Pin 2 Flash  (MISO)",  C_MISO},
+            {"PIC RA6 / Pin 15",  "→  DI    → Pin 5 Flash  (MOSI)",  C_MOSI},
+            {"PIC VDD / Pin 14",  "→  VCC   → Pin 8 Flash",          C_VCC },
+            {"PIC VSS / Pin 5",   "→  GND   → Pin 4 Flash",          C_GND },
+            {"VCC",               "→  /WP   → Pin 3 Flash  (desproteger)", C_VCC },
+            {"VCC",               "→  /HOLD → Pin 7 Flash  (habilitar)",   C_VCC },
+        };
+        y = drawConnTable(canvas, dp(10), y, W - dp(10), conns);
 
-        g.dibujarLinea(adapterPinX + 20, adapterVCC_Y, 30, adapterVCC_Y, colorPower);
-        g.dibujarLinea(30, adapterVCC_Y, 30, chipsY + 170, colorPower);
-        g.dibujarLinea(30, chipsY + 170, picR_X, picP14y, colorPower);
-        g.dibujarLinea(30, chipsY + 170, memR_X, memP8y, colorPower);
+        // ── Chip SOIC-8 Flash / EEPROM SPI ───────────────────────────────
+        y += dp(12);
+        y = drawSectionHeader(canvas, dp(10), y, W - dp(10),
+                "Flash SPI W25Qxx / EEPROM 25LCxx — SOIC-8");
+        y = drawChip8(canvas, W, y,
+                new String[]{"/CS   (1)", "DO    (2)", "/WP   (3)", "GND   (4)"},
+                new String[]{"VCC   (8)", "/HOLD (7)", "CLK   (6)", "DI    (5)"},
+                new int[]   {C_CS,        C_MISO,      C_VCC,       C_GND      },
+                new int[]   {C_VCC,       C_VCC,       C_SCK,       C_MOSI     },
+                "Flash / EEPROM SPI");
 
-        // 2. SPI SIGNALS
-        // CS (P1 -> P1)
-        g.dibujarLinea(picL_X, picP1y, picL_X - 40, picP1y, colorCS);
-        g.dibujarLinea(picL_X - 40, picP1y, picL_X - 40, chipsY + 100, colorCS);
-        g.dibujarLinea(picL_X - 40, chipsY + 100, memL_X - 20, chipsY + 100, colorCS);
-        g.dibujarLinea(memL_X - 20, chipsY + 100, memL_X - 20, memP1y, colorCS);
-        g.dibujarLinea(memL_X - 20, memP1y, memL_X, memP1y, colorCS);
+        // ── Notas ─────────────────────────────────────────────────────────
+        y += dp(12);
+        y = drawSectionHeader(canvas, dp(10), y, W - dp(10), "⚠  Notas importantes");
+        String[] notes = {
+            "• /WP y /HOLD DEBEN ir a VCC (si quedan flotantes el chip falla)",
+            "• Flash NOR (W25Qxx): BORRAR sector/chip ANTES de escribir",
+            "• EEPROM SPI (25LCxx): no requiere borrado previo",
+            "• Pin 4 = RA5/MCLR: configurado como E/S (MCLRE=0 en config word)",
+            "• Pin 15 = RA6: I/O libre gracias al oscilador INTRC seleccionado",
+            "• JEDEC cmd 50 4A: obtiene fabricante + tipo + capacidad del chip",
+        };
+        drawNotes(canvas, dp(10), y, notes);
+    }
 
-        // SCK (P2 -> P6)
-        g.dibujarLinea(picL_X, picP2y, picL_X - 60, picP2y, colorSCK);
-        g.dibujarLinea(picL_X - 60, picP2y, picL_X - 60, chipsY + 130, colorSCK);
-        g.dibujarLinea(picL_X - 60, chipsY + 130, memR_X + 20, chipsY + 130, colorSCK);
-        g.dibujarLinea(memR_X + 20, chipsY + 130, memR_X + 20, memP6y, colorSCK);
-        g.dibujarLinea(memR_X + 20, memP6y, memR_X, memP6y, colorSCK);
+    // ======================================================================
+    // HELPERS DE DIBUJO
+    // ======================================================================
 
-        // MISO (P4 -> P2)
-        g.dibujarLinea(picL_X, picP4y, picL_X - 80, picP4y, colorMISO);
-        g.dibujarLinea(picL_X - 80, picP4y, picL_X - 80, chipsY + 150, colorMISO);
-        g.dibujarLinea(picL_X - 80, chipsY + 150, memL_X - 40, chipsY + 150, colorMISO);
-        g.dibujarLinea(memL_X - 40, chipsY + 150, memL_X - 40, memP2y, colorMISO);
-        g.dibujarLinea(memL_X - 40, memP2y, memL_X, memP2y, colorMISO);
+    /** Encabezado de sección con fondo oscuro */
+    private float drawSectionHeader(Canvas canvas,
+                                    float x, float y, float maxX, String title) {
+        float h = dp(26);
+        canvas.drawRect(x, y, maxX, y + h, fill(C_HDRB));
+        Paint tp = makeText(11, C_TITLE, true);
+        canvas.drawText(title, x + dp(8), y + dp(19), tp);
+        return y + h;
+    }
 
-        // MOSI (P15 -> P5)
-        g.dibujarLinea(picR_X, picP15y, memR_X - 10, picP15y, colorMOSI);
-        g.dibujarLinea(memR_X - 10, picP15y, memR_X - 10, memP5y, colorMOSI);
-        g.dibujarLinea(memR_X - 10, memP5y, memR_X, memP5y, colorMOSI);
+    /** Tabla de conexiones (dos columnas + punto de color) */
+    private float drawConnTable(Canvas canvas,
+                                float x, float y, float maxX,
+                                Object[][] rows) {
+        float rowH  = dp(25);
+        float col1W = (maxX - x) * 0.43f;
+        Paint lp    = new Paint(Paint.ANTI_ALIAS_FLAG);
+        lp.setTypeface(Typeface.MONOSPACE);
+        lp.setTextSize(sp(9f));
 
-        // WP/HOLD to VCC
-        g.dibujarLinea(memL_X, memP3y, memL_X - 15, memP3y, colorAlert);
-        g.dibujarLinea(memR_X, memP7y, memR_X + 15, memP7y, colorAlert);
-        g.dibujarLinea(memL_X - 15, memP3y, memL_X - 15, memP1y - 30, colorAlert);
-        g.dibujarLinea(memR_X + 15, memP7y, memR_X + 15, memP1y - 30, colorAlert);
-        g.dibujarLinea(memL_X - 15, memP1y - 30, memR_X + 15, memP1y - 30, colorAlert);
-        g.dibujarLinea(memR_X + 15, memP1y - 30, memR_X, memP8y, colorPower);
+        for (int i = 0; i < rows.length; i++) {
+            float ry = y + i * rowH;
+            canvas.drawRect(x, ry, maxX, ry + rowH,
+                    fill(i % 2 == 0 ? C_ROW1 : C_ROW2));
+            int c = (int) rows[i][2];
+            // punto de color
+            canvas.drawCircle(x + col1W - dp(8), ry + rowH / 2f, dp(4), fill(c));
+            // columna izquierda
+            lp.setColor(c);
+            lp.setTextAlign(Paint.Align.LEFT);
+            canvas.drawText((String) rows[i][0], x + dp(6), ry + dp(17), lp);
+            // columna derecha
+            lp.setColor(C_TEXT);
+            canvas.drawText((String) rows[i][1], x + col1W + dp(4), ry + dp(17), lp);
+        }
+        return y + rows.length * rowH;
+    }
+
+    /** Chip DIP-8 / SOIC-8 con 4 pines por lado */
+    private float drawChip8(Canvas canvas, float W, float startY,
+                             String[] lLabels, String[] rLabels,
+                             int[] lColors, int[] rColors,
+                             String chipName) {
+        float cx    = W / 2f;
+        float cW    = dp(90);
+        float cH    = dp(110);
+        float cL    = cx - cW / 2f;
+        float cR    = cx + cW / 2f;
+        float pinSp = cH / 4f;
+        float wLen  = dp(22);
+
+        canvas.drawRoundRect(new RectF(cL, startY, cR, startY + cH),
+                dp(4), dp(4), fill(C_CHIP));
+        canvas.drawRoundRect(new RectF(cL, startY, cR, startY + cH),
+                dp(4), dp(4), stroke(C_BORD, 1.5f));
+        // muesca
+        canvas.drawArc(new RectF(cx - dp(9), startY - dp(5), cx + dp(9), startY + dp(5)),
+                0, -180, false, stroke(C_BORD, 1.5f));
+        // nombre
+        drawCenteredText(canvas, chipName, cx, startY + cH / 2f + sp(5),
+                makeText(11, C_TEXT, true));
+
+        Paint pl = new Paint(Paint.ANTI_ALIAS_FLAG);
+        pl.setTypeface(Typeface.MONOSPACE);
+        pl.setTextSize(sp(9f));
+
+        for (int i = 0; i < 4; i++) {
+            float py = startY + pinSp * (i + 0.5f);
+            // izquierda
+            canvas.drawLine(cL - wLen, py, cL, py, stroke(lColors[i], 2.5f));
+            pl.setColor(lColors[i]);
+            pl.setTextAlign(Paint.Align.RIGHT);
+            canvas.drawText(lLabels[i], cL - wLen - dp(4), py + sp(4), pl);
+            // derecha
+            canvas.drawLine(cR, py, cR + wLen, py, stroke(rColors[i], 2.5f));
+            pl.setColor(rColors[i]);
+            pl.setTextAlign(Paint.Align.LEFT);
+            canvas.drawText(rLabels[i], cR + wLen + dp(4), py + sp(4), pl);
+        }
+        return startY + cH;
+    }
+
+    /** Notas en lista (una por línea) */
+    private float drawNotes(Canvas canvas, float x, float y, String[] notes) {
+        Paint np = new Paint(Paint.ANTI_ALIAS_FLAG);
+        np.setTextSize(sp(9.5f));
+        np.setColor(C_TEXT);
+        float lineH = dp(21);
+        for (String note : notes) {
+            canvas.drawText(note, x + dp(6), y + dp(15), np);
+            y += lineH;
+        }
+        return y;
+    }
+
+    /** Leyenda de colores en dos filas de 5 */
+    private void drawLegend(Canvas canvas, float x, float y, float maxX) {
+        Object[][] items = {
+            {"SDA I2C", C_SDA}, {"SCL I2C", C_SCL},
+            {"CS SPI",  C_CS }, {"SCK SPI", C_SCK },
+            {"MOSI",    C_MOSI},{"MISO",    C_MISO},
+            {"VCC +5V", C_VCC}, {"GND",     C_GND },
+            {"RX/TX",   C_UART},{"LED",     C_LED },
+        };
+        float iW = (maxX - x) / 5f;
+        float iH = dp(20);
+        Paint lp = new Paint(Paint.ANTI_ALIAS_FLAG);
+        lp.setTextSize(sp(8.5f));
+        for (int i = 0; i < items.length; i++) {
+            int col = i % 5, row = i / 5;
+            float ix = x + col * iW;
+            float iy = y + row * iH;
+            canvas.drawRect(ix, iy + dp(3), ix + dp(13), iy + dp(13),
+                    fill((int) items[i][1]));
+            lp.setColor((int) items[i][1]);
+            canvas.drawText((String) items[i][0], ix + dp(17), iy + dp(13), lp);
+        }
+    }
+
+    // ── Utilidades de Paint ───────────────────────────────────────────────
+
+    private Paint fill(int color) {
+        Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
+        p.setStyle(Paint.Style.FILL);
+        p.setColor(color);
+        return p;
+    }
+
+    private Paint stroke(int color, float dpWidth) {
+        Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
+        p.setStyle(Paint.Style.STROKE);
+        p.setStrokeWidth(dp(dpWidth));
+        p.setColor(color);
+        p.setStrokeCap(Paint.Cap.ROUND);
+        return p;
+    }
+
+    private Paint makeText(float spSize, int color, boolean bold) {
+        Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
+        if (spSize > 0) p.setTextSize(sp(spSize));
+        p.setColor(color);
+        p.setTypeface(bold ? Typeface.DEFAULT_BOLD : Typeface.MONOSPACE);
+        return p;
+    }
+
+    private void drawCenteredText(Canvas canvas, String text, float cx, float y, Paint p) {
+        p.setTextAlign(Paint.Align.CENTER);
+        canvas.drawText(text, cx, y, p);
+    }
+
+    private float dp(float dp) {
+        return dp * getResources().getDisplayMetrics().density;
+    }
+
+    private float sp(float sp) {
+        return sp * getResources().getDisplayMetrics().scaledDensity;
     }
 }
