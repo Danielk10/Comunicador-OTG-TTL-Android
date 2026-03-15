@@ -3,7 +3,7 @@
 ## Descripción Corta (80 caracteres máximo)
 
 ```
-Crea tu propio programador universal de memorias EEPROM I2C/SPI usando el PIC16F628A
+Crea tu propio programador universal de memorias EEPROM I2C/SPI con PIC16F628A
 ```
 
 ---
