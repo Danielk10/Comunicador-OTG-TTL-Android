@@ -1,4 +1,4 @@
-# 📱 OTG Flash EEPROM - Programador Universal de Memorias
+# OTG Flash EEPROM - Programador Universal de Memorias
 
 ![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)
 ![Android](https://img.shields.io/badge/Android-23%2B-green.svg)
