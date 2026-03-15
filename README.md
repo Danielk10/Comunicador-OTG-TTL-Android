@@ -19,8 +19,9 @@
 - **💾 Exportación de archivos**: Guarda dumps en formato .bin y .hex
 - **🖥️ Terminal serial integrada**: Herramienta de diagnóstico y comunicación directa
 - **📊 Soporte múltiples memorias**: 
-  - EEPROMs I2C: 24C01 hasta 24C512 (128 bytes a 64 KB)
-  - Flash SPI: W25Qxx, MX25Lxx, 25LCxx (hasta 16 MB)
+  - **EEPROMs I2C**: 24C01 hasta 24C512 (128 bytes a 256 KB / 2 Mbit)
+  - **EEPROM SPI**: 25LC series (128 bytes a 4 MB)
+  - **Flash SPI NOR**: W25Qxx, MX25Lxx (1 MB hasta 16 MB)
 - **🔌 Conexión USB OTG**: Compatible con adaptadores CH340, CP2102, FTDI
 - **📱 Interfaz intuitiva**: Diseño Material Design optimizado para Android
 
@@ -71,7 +72,7 @@ El proyecto utiliza una arquitectura de dos capas:
 ### Diagrama de Pines PIC16F628A (DIP-18)
 
 ```
-         +--────────────+
+         +──────────────+
   RA2 ───┤ 1          18├─── RA1  (SCL I2C)
   RA3 ───┤ 2          17├─── RA0  (SDA I2C)
   RA4 ───┤ 3          16├─── RA7
@@ -389,9 +390,9 @@ Con las siguientes condiciones:
 
 ## 📊 Estado del Proyecto
 
-- ✅ Soporte completo I2C (24C01 a 24C512)
-- ✅ Soporte completo SPI Flash (W25Qxx, MX25Lxx)
-- ✅ Soporte EEPROM SPI (25LCxx, M95xxx)
+- ✅ Soporte completo I2C (24C01 a 24C512 - hasta 2 Mbit / 256 KB)
+- ✅ Soporte completo SPI Flash NOR (W25Q08 a W25Q128 - hasta 16 MB)
+- ✅ Soporte EEPROM SPI (25LC series - hasta 4 MB)
 - ✅ Parser Intel HEX con validación
 - ✅ Visor hexadecimal en tiempo real
 - ✅ Terminal serial integrada
