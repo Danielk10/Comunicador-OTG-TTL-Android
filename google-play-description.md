@@ -11,7 +11,7 @@ Crea tu propio programador universal de memorias EEPROM I2C/SPI con PIC16F628A
 ## Descripción Larga (4000 caracteres máximo)
 
 ```
-OTG FLASH EEPROM - PROGRAMADOR UNIVERSAL DE MEMORIAS EEPROM
+OTG FLASH EEPROM - HERRAMIENTA PARA GRABAR MEMORIAS EEPROM
 
 ¿Quieres leer, escribir y programar memorias EEPROM I2C y Flash SPI directamente desde tu Android? ¡OTG Flash EEPROM es la solución que necesitas!
 
