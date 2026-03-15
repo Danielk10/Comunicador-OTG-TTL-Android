@@ -1,6 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
+    <!-- Diagramas de hardware -->
     <item
         android:id="@+id/action_pinout_pic"
         android:title="@string/menu_pinout_pic"
@@ -16,8 +18,22 @@
         android:title="@string/menu_spi_conn"
         app:showAsAction="never" />
 
+    <!-- Firmware -->
+    <item
+        android:id="@+id/action_firmware"
+        android:title="@string/menu_firmware"
+        app:showAsAction="never" />
+
+    <!-- Legal -->
+    <item
+        android:id="@+id/action_privacy"
+        android:title="@string/menu_privacy"
+        app:showAsAction="never" />
+
+    <!-- Acerca de -->
     <item
         android:id="@+id/action_about"
         android:title="@string/menu_about"
         app:showAsAction="never" />
+
 </menu>
