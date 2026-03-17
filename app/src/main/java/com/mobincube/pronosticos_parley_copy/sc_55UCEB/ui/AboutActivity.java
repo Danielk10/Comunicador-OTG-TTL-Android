@@ -52,16 +52,10 @@ public class AboutActivity extends AppCompatActivity {
         // ── Versión dinámica ──────────────────────────────────────────
         TextView tvVersion = findViewById(R.id.tvVersion);
         try {
-            PackageInfo pi;
-            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
-                pi = getPackageManager().getPackageInfo(getPackageName(), PackageManager.PackageInfoFlags.of(0));
-            } else {
-                @SuppressWarnings("deprecation")
-                PackageInfo oldPi = getPackageManager().getPackageInfo(getPackageName(), 0);
-                pi = oldPi;
-            }
+            PackageInfo pi = getPackageInfoCompat();
+            long vCode = androidx.core.content.pm.PackageInfoCompat.getLongVersionCode(pi);
             tvVersion.setText("Versión " + pi.versionName
-                    + "  (build " + pi.versionCode + ")");
+                    + "  (build " + vCode + ")");
         } catch (PackageManager.NameNotFoundException e) {
             tvVersion.setText("Versión 1.0.1");
         }
@@ -116,6 +110,15 @@ public class AboutActivity extends AppCompatActivity {
             return true;
         }
         return super.onOptionsItemSelected(item);
+    }
+
+    @SuppressWarnings("deprecation")
+    private PackageInfo getPackageInfoCompat() throws PackageManager.NameNotFoundException {
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+            return getPackageManager().getPackageInfo(getPackageName(), PackageManager.PackageInfoFlags.of(0));
+        } else {
+            return getPackageManager().getPackageInfo(getPackageName(), 0);
+        }
     }
 
     // ── Utilidad ──────────────────────────────────────────────────────────

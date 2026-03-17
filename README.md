@@ -13,34 +13,30 @@
 
 ### ✨ Funcionalidades de la Aplicación
 
-- **📖 Lectura de memorias**: Extrae el contenido completo de EEPROMs I2C y Flash SPI
-- **✍️ Escritura de firmware**: Programa memorias con archivos .hex o .bin
-- **🔍 Visor hexadecimal en tiempo real**: Visualiza los datos mientras se leen
-- **💾 Exportación de archivos**: Guarda dumps en formato .bin y .hex
-- **📊 Soporte múltiples memorias**: 
-  - **EEPROMs I2C**: 24C01 hasta 24C512 (128 bytes a 256 KB / 2 Mbit)
-  - **EEPROM SPI**: 25LC series (128 bytes a 4 MB)
-  - **Flash SPI NOR**: W25Qxx, MX25Lxx (1 MB hasta 16 MB)
-- **🔌 Conexión USB OTG**: Compatible con adaptadores CH340, CP2102, FTDI
-- **📱 Interfaz intuitiva**: Diseño Material Design optimizado para Android
-- **🖥️ Uso versátil**: El hardware también puede usarse desde PC o cualquier terminal serial Android
+- **📖 Lectura de memorias (Sistema por Chunks)**: Extrae el contenido de EEPROMs I2C y Flash SPI garantizando el 100% de la integridad de los datos, evitando el desbordamiento del puerto serie usando un ingenioso sistema de páginas (chunks).
+- **✍️ Escritura de firmware segura**: Programa memorias con archivos .hex o .bin respetando los límites de los sectores de las memorias (Page Programs).
+- **🔍 Escáner Automático**: Detección inteligente de chips conectados al bus I2C y lectura nativa del JEDEC ID en chips SPI. El modelo del chip en el selector de la App se autocompleta con base en este escaneo.
+- **🛡️ Verificación de datos integrada**: Compara el buffer local de escritura con el buffer leído directamente desde la memoria para verificar empíricamente la autenticidad del quemado byte por byte.
+- **🔍 Visor hexadecimal en tiempo real**: Visualiza los datos mientras se leen/escriben, optimizado para archivos grandes (Throttled render window) para no saturar la memoria RAM del celular (Prevención de ANR).
+- **💾 Exportación de archivos**: Guarda dumps de manera nativa en formato .bin y .hex en la carpeta de descargas del dispositivo.
+- **🔌 Conexión USB OTG nativa**: Gestión de la interfaz a 9600 baudios compatible con CH340, CP2102 y FTDI, cumpliendo las directrices más estrictas de permisos USB de Android 13+.
 
 ### 🛠️ Arquitectura del Sistema
 
 El proyecto utiliza una arquitectura de dos capas:
 
-1. **Aplicación Android (El Cerebro)**: 
-   - Interfaz de usuario con Material Design
-   - Procesamiento de archivos Intel HEX y binarios
-   - Comunicación USB OTG a 9600 baudios mediante [usb-serial-for-android](https://github.com/mik3y/usb-serial-for-android)
-   - Gestión de permisos y almacenamiento
+1. **Aplicación Android (El Cerebro)**:
+   - Interfaz Material Design con reportes log en tiempo real y copiables.
+   - Procesamiento e inyección de datos Intel HEX y Binarios puros.
+   - Manejo de estado asíncrono y control de tiempo de espera (timeouts).
+   - Control del puerto serial mediante [usb-serial-for-android](https://github.com/mik3y/usb-serial-for-android).
 
 2. **Firmware PIC16F628A (El Intérprete)**:
-   - Recibe comandos seriales desde Android o cualquier terminal
-   - Traduce a señales I2C/SPI mediante bit-banging
-   - Controla directamente las memorias EEPROM
-   - LED indicador de estado de operación
-   - Protocolo binario documentado en [PICMEM_v3_Protocolo.md](PICMEM_v3_Protocolo.md)
+   - Recibe comandos seriales desde Android o cualquier script Python.
+   - Interfaz I2C y SPI por hardware (bit-banging ultrarrápido).
+   - LED indicador de estado visual (RB4).
+   - Código en lenguaje C estricto (C99 compilado en SDCC), 0 warnings.
+   - Protocolo binario documentado en [PICMEM_v3_Protocolo.md](PICMEM_v3_Protocolo.md).
 
 ---
 
@@ -56,16 +52,12 @@ El proyecto utiliza una arquitectura de dos capas:
 | Resistencias Pull-Up | 4.7 kΩ (para I2C) | 2 |
 | LED | Cualquier color | 1 |
 | Resistencia LED | 330 Ω | 1 |
-| Cristal/Oscilador | 4 MHz (opcional, se usa oscilador interno) | - |
-| Protoboard | Para montaje de prototipo | 1 |
-| Cables Dupont | Macho-macho, macho-hembra | Varios |
+| Oscilador | (Opcional, el código corre a 4MHz con oscilador interno) | - |
 
 ### Software Necesario
 
-- **Android**: Versión 6.0 (API 23) o superior con soporte USB OTG
-- **Para compilar firmware**: SDCC (Small Device C Compiler) o C PIC Compiler
-- **Para programar PIC**: Cualquier programador compatible (PICkit, TL866, etc.)
-- **Terminal serial (opcional)**: [Serial USB Terminal](https://play.google.com/store/apps/details?id=de.kai_morich.serial_usb_terminal) para comunicación directa con el hardware
+- **Android**: Versión 6.0 (API 23) a Android 13+ (API 33+) con soporte USB OTG.
+- **Terminal serial o Script (opcional)**: [Serial USB Terminal](https://play.google.com/store/apps/details?id=de.kai_morich.serial_usb_terminal) o usar los scripts en Python adjuntos (`test_protocol_v3.py`).
 
 ---
 
@@ -96,19 +88,10 @@ TX RB2 ──┤ 8          11├─── RB5
 
 #### LED Indicador
 - **Pin 10 (RB4)** → [Resistencia 330Ω] → [LED ánodo]
-- **LED cátodo** → GND
 
 #### Memorias I2C (24Cxx)
 - **Pin 17 (RA0/SDA)** → Pin SDA de la memoria + Pull-up 4.7kΩ a VCC
 - **Pin 18 (RA1/SCL)** → Pin SCL de la memoria + Pull-up 4.7kΩ a VCC
-
-```
-VCC (+5V o +3.3V según la memoria)
- │      │
-4.7k   4.7k
- │      │
-SDA    SCL
-```
 
 #### Flash SPI (W25Qxx, 25Cxx)
 - **Pin 1 (RA2/CS)** → Pin /CS de la Flash
@@ -120,234 +103,52 @@ SDA    SCL
 
 ## 🚀 Guía de Uso Rápida
 
-### Paso 1: Preparación del Hardware
-
-1. **Programa el PIC16F628A**:
-   - Descarga el archivo `pic_firmware_v3.hex` de este repositorio
-   - Usa tu programador favorito (PICkit2/3/4, TL866, etc.)
-   - Configura los fuses según la configuración del código fuente
-
-2. **Monta el circuito**:
-   - Conecta el PIC según el diagrama de pines
-   - Instala las resistencias pull-up para I2C (4.7kΩ)
-   - Conecta el LED indicador con su resistencia (330Ω)
-   - Conecta la memoria que deseas programar
-
-3. **Alimentación**:
-   - Alimenta el circuito con 5V (desde el adaptador USB-Serial o fuente externa)
-   - Verifica que el LED parpadee 2 veces al encender (señal de inicio correcto)
-
-### Paso 2: Instalación de la App
-
-1. Descarga la última versión desde Google Play Store
-2. Instala en tu dispositivo Android
-3. Concede permisos de USB y almacenamiento cuando se soliciten
-
-### Paso 3: Conexión y Uso
-
-1. **Conectar**:
-   - Conecta el adaptador USB-Serial al puerto OTG de tu Android
-   - Abre la aplicación OTG Flash EEPROM
-   - Presiona el botón "Conectar"
-   - Acepta el permiso USB
-   - Verás "Conectado: 9600 bps" en verde
-
-2. **Leer una Memoria**:
-   - Selecciona el protocolo (I2C o SPI)
-   - Elige el modelo exacto de tu memoria del listado
-   - Presiona "Leer Memoria"
-   - El visor hexadecimal mostrará los datos en tiempo real
-   - Los archivos se guardarán automáticamente en `Descargas/rom/`
-
-3. **Escribir una Memoria**:
-   - Selecciona el protocolo y modelo de memoria
-   - Presiona "Cargar Archivo (.bin / .hex)"
-   - Selecciona tu archivo de firmware
-   - Verifica los datos en el visor de previsualización
-   - Presiona "Escribir Memoria"
-   - Espera a que finalice (el LED del PIC parpadeará al completar)
-
-### Paso 4: Uso Avanzado desde Terminal Serial
-
-Para usuarios avanzados o desarrollo, el hardware también puede controlarse directamente mediante comandos binarios desde cualquier terminal serial:
-
-**Desde Android:**
-- Descarga [Serial USB Terminal](https://play.google.com/store/apps/details?id=de.kai_morich.serial_usb_terminal)
-- Configura: 9600 baud, 8N1, modo HEX
-- Envía comandos según [PICMEM_v3_Protocolo.md](PICMEM_v3_Protocolo.md)
-
-**Desde PC:**
-- Usa cualquier terminal serial (PuTTY, Tera Term, minicom, etc.)
-- Configura: 9600 baud, 8 bits, sin paridad, 1 stop bit
-- Consulta el protocolo completo en [PICMEM_v3_Protocolo.md](PICMEM_v3_Protocolo.md)
-
-Esto permite integrar el hardware en scripts automatizados, sistemas embebidos o aplicaciones personalizadas.
-
----
-
-## 📖 Documentación Detallada
-
-### Protocolo de Comunicación
-
-El sistema utiliza un protocolo binario eficiente documentado en detalle en:
-- **[PICMEM_v3_Protocolo.md](PICMEM_v3_Protocolo.md)** - Especificación completa del protocolo
-
-Este documento incluye:
-- Descripción de todos los comandos disponibles
-- Formato de bytes y parámetros
-- Ejemplos de uso desde terminal
-- Tiempos de operación estimados
-- Guía de resolución de problemas
-- Configuración de macros para terminales
-
-### Código Fuente del Firmware
-
-- **[pic_firmware_v3.c](pic_firmware_v3.c)** - Código fuente completo en C
-- **[pic_firmware_v3.hex](pic_firmware_v3.hex)** - Firmware precompilado listo para grabar
-
-**Compilación del firmware**:
-```bash
-sdcc --std-c99 -mpic14 -p16f628a --use-non-free pic_firmware_v3.c
-```
-
-O usa la aplicación **C PIC Compiler** disponible en Play Store para compilar directamente desde Android.
+1. **Firmware del PIC**: Descarga `pic_firmware_v3.hex` y grábalo en el microcontrolador.
+2. **App en Android**: Conecta el USB-Serial por OTG y abre la App.
+3. **Detección Automática**: Pulsa **Escanear / ID**. El Log mostrará los dispositivos I2C en el bus o el JEDEC de la memoria SPI, autoseleccionando el chip en el menú desplegable.
+4. **Respaldo (Full Dump)**: Pulsa **Full Dump** o **Leer Memoria**. El sistema irá solicitando bloques (chunks) de 64 bytes hasta guardar el chip entero en RAM.
+5. **Visor y Guardado**: Podrás previsualizar en vivo un fragmento del código y al final usar **Guardar Memoria** para exportarlo como Binario e Intel Hex en tu carpeta de Descargas.
 
 ---
 
 ## 🏗️ Arquitectura del Código Android
 
-El proyecto sigue principios de Programación Orientada a Objetos (POO) con separación clara de responsabilidades:
+Tras una rigurosa auditoría (Marzo 2026), el código se encuentra limpio de dependencias muertas y warnings en su empaquetado.
 
-### Estructura de Paquetes
+### Estructura de Paquetes Optimizada
 
 ```
 com.mobincube.pronosticos_parley_copy.sc_55UCEB/
 ├── usb/
-│   └── UsbSerialManager.java          # Gestión de comunicación USB OTG
+│   └── UsbSerialManager.java          # Wrapper Serial robusto (Permisos Android 13+)
 ├── eeprom/
-│   ├── EepromProtocol.java            # Interfaz abstracta de protocolo
-│   ├── I2cProtocol.java               # Implementación protocolo I2C
-│   └── SpiProtocol.java               # Implementación protocolo SPI
+│   ├── EepromProtocol.java            # Interfaz de comandos
+│   ├── I2cProtocol.java               # Direccionamiento 8-bits/16-bits para 24Cxx
+│   └── SpiProtocol.java               # Opcodes SPI / Flash Erase
 ├── file/
-│   ├── FileManager.java               # Gestión de archivos (save/load)
-│   └── IntelHexFormat.java            # Parser formato Intel HEX
-├── ui/
-│   ├── MainActivity.java              # Actividad principal
-│   ├── HexViewerHelper.java           # Visor hexadecimal
-│   └── LogHelper.java                 # Sistema de logging
-└── exception/
-    └── HexFormatException.java        # Excepciones personalizadas
+│   ├── FileManager.java               # Exportador nativo SD (.hex y .bin)
+│   └── IntelHexFormat.java            # Lector estricto con rellenado de espacio (0xFF)
+├── exception/
+│   └── HexParseException.java         # Control de errores de formato
+└── ui/
+    ├── MainActivity.java              # Máquina de estados principal Asíncrona
+    ├── HexViewerHelper.java           # Render hexadecimal optimizado (Prevención de ANR)
+    └── LogHelper.java                 # Log visual de usuario (Copiable)
 ```
-
-### Componentes Clave
-
-#### 1. Capa de Comunicación USB
-- **UsbSerialManager**: Maneja permisos, configuración 9600 8N1, lectura/escritura de bytes
-- Basado en [usb-serial-for-android](https://github.com/mik3y/usb-serial-for-android) v3.10.0
-
-#### 2. Capa de Protocolos
-- **I2cProtocol**: Calcula direcciones de bloque para memorias 24Cxx, gestiona page writes
-- **SpiProtocol**: Maneja comandos JEDEC ID, status register, read/write para Flash SPI
-
-#### 3. Capa de Archivos
-- **FileManager**: Guardado en `Descargas/rom/`, generación de nombres únicos con timestamp
-- **IntelHexFormat**: Parser estricto con validación de checksums, extracción de datos limpios
-
-#### 4. Capa de UI
-- **MainActivity**: Control de estado, progress bars, gestión de operaciones asíncronas
-- **HexViewerHelper**: Renderizado optimizado con throttling para evitar congelamiento
-
----
-
-## 🎨 Características de la Interfaz
-
-- **Material Design 3**: Interfaz moderna y fluida
-- **Temas claro/oscuro**: Adaptación automática al sistema
-- **Visor hex en tiempo real**: Actualización optimizada sin bloqueos
-- **Progress bars detalladas**: Información de progreso por páginas
-- **Logs visuales**: Depuración en pantalla para usuarios avanzados
-- **Selección de memoria guiada**: Menús desplegables con modelos comunes
-
----
-
-## ⚠️ Consideraciones Importantes
-
-### Seguridad y Respaldos
-
-- **SIEMPRE haz respaldo** antes de escribir en una memoria
-- Verifica el modelo exacto de tu memoria antes de programar
-- Las memorias Flash SPI requieren borrado previo (sector o chip completo)
-- El borrado completo de chip (Chip Erase) es irreversible
-
-### Compatibilidad
-
-- **Android 6.0+** con soporte USB OTG
-- **Adaptadores USB-Serial soportados**: CH340, CH341, CP210x, FTDI FT232, PL2303
-- **Velocidad fija**: 9600 baudios (no modificable por limitación del firmware)
-
-### Limitaciones Conocidas
-
-- Velocidad de transferencia limitada a 9600 baud (aprox. ~1 KB/s)
-- Memorias Flash grandes (>4MB) pueden tardar varios minutos
-- Chip Erase en Flash >4MB puede dar timeout (pero continúa en background)
-- Máximo 65535 bytes por comando individual
 
 ---
 
 ## 🐛 Resolución de Problemas
 
-### El PIC no responde
-
-- **Problema**: App muestra "Error de comunicación" o timeouts
-- **Solución**: 
-  - Verifica las conexiones RX/TX (deben estar cruzadas)
-  - Confirma alimentación de 5V estable
-  - Prueba comando PING (3F) desde terminal
-  - Verifica que el firmware esté correctamente grabado
-
-### I2C no detecta la memoria
-
-- **Problema**: Escaneo I2C no encuentra dispositivos
-- **Solución**:
-  - Verifica resistencias pull-up de 4.7kΩ en SDA y SCL
-  - Confirma conexión de SDA y SCL a pines correctos
-  - Prueba con otro chip I2C conocido (ej: DS1307 RTC)
-  - Mide voltaje en SDA/SCL (debe ser ~5V en reposo)
-
-### SPI Flash devuelve FF FF FF
-
-- **Problema**: JEDEC ID devuelve FF FF FF o 00 00 00
-- **Solución**:
-  - Revisa todas las conexiones SPI (CS, SCK, MOSI, MISO)
-  - Verifica polaridad de VCC y GND
-  - Confirma que la Flash no esté protegida contra escritura
-  - Prueba leyendo Status Register (debe dar respuesta válida)
-
-### Escritura no se guarda
-
-- **Problema**: Datos escritos no persisten después de leer
-- **Solución**:
-  - **Flash SPI**: Borra el sector/chip ANTES de escribir (las Flash NOR requieren estar en 0xFF)
-  - **EEPROM I2C**: Respeta los tamaños de página según modelo
-  - Espera tiempo de escritura (5-10ms EEPROM, 100ms+ Flash)
+*   **El escaneo I2C no encuentra el chip:** Asegúrate de instalar físicamente las **resistencias pull-up de 4.7kΩ** desde SDA y SCL hacia VCC (+5V o +3.3V según tu chip). Es mandatorio en el protocolo I2C.
+*   **SPI Flash devuelve FF FF FF:** El chip Flash no responde. Verifica que los pines `/WP` y `/HOLD` del chip SPI estén conectados también a VCC.
+*   **Timeouts en la lectura/escritura:** Los baudios (9600) son lentos pero muy estables. Si desconectas el chip a mitad del proceso, la app esperará hasta agotar su *Timeout* (10 segundos) antes de reiniciar su estado. Esto está diseñado como un seguro contra cuelgues.
 
 ---
 
 ## 📜 Licencia
 
 Este proyecto se distribuye bajo la **[Licencia Apache 2.0](LICENSE)**.
-
-Esto significa que puedes:
-- ✅ Usar el software comercialmente
-- ✅ Modificar el código fuente
-- ✅ Distribuir versiones modificadas
-- ✅ Usar en proyectos privados
-- ✅ Conceder sublicencias
-
-Con las siguientes condiciones:
-- 📄 Incluir copia de la licencia y copyright
-- 📝 Documentar cambios realizados al código original
-- 🔒 No usar marcas registradas del proyecto sin permiso
 
 ---
 
@@ -356,64 +157,5 @@ Con las siguientes condiciones:
 **Daniel Diamon**
 - Email: [danielpdiamon@gmail.com](mailto:danielpdiamon@gmail.com)
 - GitHub: [github.com/Danielk10](https://github.com/Danielk10)
-
----
-
-## 🤝 Contribuciones
-
-¡Las contribuciones son bienvenidas! Si quieres mejorar el proyecto:
-
-1. Haz fork del repositorio
-2. Crea una rama para tu feature (`git checkout -b feature/nueva-caracteristica`)
-3. Commit tus cambios (`git commit -am 'Agregar nueva característica'`)
-4. Push a la rama (`git push origin feature/nueva-caracteristica`)
-5. Abre un Pull Request
-
-### Áreas donde puedes contribuir
-
-- 🔧 Soporte para nuevos modelos de memoria
-- ⚡ Optimización de velocidad de transferencia
-- 🌐 Traducciones a otros idiomas
-- 📱 Mejoras en la interfaz de usuario
-- 🐛 Reportes y corrección de bugs
-- 📚 Documentación y tutoriales
-
----
-
-## 🔗 Enlaces Útiles
-
-- **Documentación del Protocolo**: [PICMEM_v3_Protocolo.md](PICMEM_v3_Protocolo.md)
-- **Código Fuente Firmware**: [pic_firmware_v3.c](pic_firmware_v3.c)
-- **Firmware Compilado**: [pic_firmware_v3.hex](pic_firmware_v3.hex)
-- **Repositorio GitHub**: [https://github.com/Danielk10/Comunicador-OTG-TTL-Android](https://github.com/Danielk10/Comunicador-OTG-TTL-Android)
-- **Librería USB Serial**: [usb-serial-for-android](https://github.com/mik3y/usb-serial-for-android) por mik3y
-- **Terminal Serial Android**: [Serial USB Terminal](https://play.google.com/store/apps/details?id=de.kai_morich.serial_usb_terminal)
-
----
-
-## ⭐ Agradecimientos
-
-- Librería USB serial: **[usb-serial-for-android](https://github.com/mik3y/usb-serial-for-android)** v3.10.0 por mik3y
-- Documentación de protocolo I2C: Microchip 24Cxx datasheets
-- Documentación de protocolo SPI: Winbond W25Qxx datasheets
-- Compilador SDCC: Small Device C Compiler Team
-- Terminal serial de referencia: Serial USB Terminal por Kai Morich
-
----
-
-## 📊 Estado del Proyecto
-
-- ✅ Soporte completo I2C (24C01 a 24C512 - hasta 2 Mbit / 256 KB)
-- ✅ Soporte completo SPI Flash NOR (W25Q08 a W25Q128 - hasta 16 MB)
-- ✅ Soporte EEPROM SPI (25LC series - hasta 4 MB)
-- ✅ Parser Intel HEX con validación
-- ✅ Visor hexadecimal en tiempo real
-- ✅ Exportación .bin y .hex
-- ✅ Protocolo binario documentado para uso desde cualquier terminal
-- ✅ Compatible con adaptadores USB-Serial comunes
-- 🔄 En desarrollo: Soporte Microwire (93Cxx)
-- 🔄 En desarrollo: Editor hexadecimal
-
----
 
 **¿Te gusta el proyecto? ¡Dale una ⭐ en GitHub!**
