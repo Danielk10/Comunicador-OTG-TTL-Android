@@ -402,6 +402,10 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
             return;
         }
         log("Verificando datos...");
+        if (eepromBuffer.length != writeDataBuffer.length) {
+            log(String.format("Aviso: tamaño leído (%d B) != tamaño cargado (%d B). Comparando %d B.",
+                    eepromBuffer.length, writeDataBuffer.length, Math.min(eepromBuffer.length, writeDataBuffer.length)));
+        }
         int size = Math.min(eepromBuffer.length, writeDataBuffer.length);
         int errors = 0;
         for (int i = 0; i < size; i++) {
@@ -412,7 +416,7 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
             }
         }
         if (errors == 0) {
-            log("✓ VERIFICACIÓN OK: datos coinciden perfectamente.");
+            log("✓ VERIFICACIÓN OK: los datos comparados coinciden perfectamente.");
             Toast.makeText(this, "Verificación exitosa", Toast.LENGTH_SHORT).show();
         } else {
             log("✗ " + errors + " diferencias encontradas.");

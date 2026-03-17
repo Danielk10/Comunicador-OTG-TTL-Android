@@ -340,6 +340,7 @@
                     android:text="> Aplicación lista.\n"
                     android:textColor="#8B949E"
                     android:textSize="11sp"
+                    android:textIsSelectable="true"
                     android:typeface="monospace" />
             </ScrollView>
         </LinearLayout>
