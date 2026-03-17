@@ -735,8 +735,11 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
                             byte[] found = readStream.toByteArray();
                             StringBuilder sb = new StringBuilder("I2C Scan → ");
                             if (found.length == 0) sb.append("Sin dispositivos.");
-                            else for (byte a : found)
+                            else {
+                                sb.append("Detectados: ");
+                                for (byte a : found)
                                     sb.append(String.format("0x%02X ", a & 0xFF));
+                            }
                             log(sb.toString());
 
                             // AUTO-SELECTION I2C
@@ -756,7 +759,10 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
                                         spinnerProtocol.setSelection(0);
                                         updateModelSpinner(0);
                                     }
-                                    if (modelIdx != -1) spinnerModel.setSelection(modelIdx);
+                                    if (modelIdx != -1) {
+                                        spinnerModel.setSelection(modelIdx);
+                                        log("✓ Modelo I2C auto-sugerido.");
+                                    }
                                 });
                             }
                             updateUIState(true);
@@ -774,11 +780,12 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
                         if (pendingFullDump) {
                             startFullDumpAfterJedec(j[0], j[1], j[2]);
                         } else {
-                            log(String.format("JEDEC ID: %02X %02X %02X",
-                                    j[0] & 0xFF, j[1] & 0xFF, j[2] & 0xFF));
-
-                            // AUTO-SELECTION SPI / FLASH
-                            if (j[0] != (byte) 0xFF && j[0] != 0x00) {
+                            String hexJedec = String.format("%02X %02X %02X", j[0] & 0xFF, j[1] & 0xFF, j[2] & 0xFF);
+                            if (j[0] == (byte) 0xFF || j[0] == 0x00) {
+                                log("SPI Scan → Sin respuesta o chip no detectado (JEDEC: " + hexJedec + ")");
+                            } else {
+                                log("SPI Scan → JEDEC ID: " + hexJedec);
+                                // AUTO-SELECTION SPI / FLASH
                                 runOnUiThread(() -> {
                                     if (spinnerProtocol.getSelectedItemPosition() != 1) {
                                         spinnerProtocol.setSelection(1);
@@ -790,6 +797,7 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
                                         int idx = cap - 7; 
                                         if (idx >= 0 && idx < spinnerModel.getCount()) {
                                             spinnerModel.setSelection(idx);
+                                            log("✓ Modelo SPI Flash auto-sugerido.");
                                         }
                                     }
                                 });
