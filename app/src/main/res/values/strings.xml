@@ -35,30 +35,28 @@
     <!--
         EEPROMs SPI 25Cxx + Flash NOR W25Qxx
         Índices 0-12  → EEPROM SPI 25LCxx (sin Chip Erase nativo, addr 1-2 bytes)
-        Índices 13-17 → Flash NOR W25Qxx / MX25Lxx (con Chip Erase 0xC7, addr 3 bytes)
+        Índices 13-17 → Flash NOR W25Qxx / MX25Lxx (con Chip Erase 50 45, addr 3 bytes)
         Deben coincidir exactamente con SpiProtocol.spiSizes[]
     -->
     <string-array name="eeprom_spi_sizes">
-        <!-- EEPROM SPI 25LCxx (índices 0-12) -->
-        <item>25LC010A —  128 bytes   (1 Kbit)</item>
-        <item>25LC020A —  256 bytes   (2 Kbit)</item>
-        <item>25LC040A —  512 bytes   (4 Kbit)</item>
-        <item>25LC080  —  1 KB        (8 Kbit)</item>
-        <item>25LC160  —  2 KB        (16 Kbit)</item>
-        <item>25LC320  —  4 KB        (32 Kbit)</item>
-        <item>25LC640  —  8 KB        (64 Kbit)</item>
-        <item>25LC128  —  16 KB       (128 Kbit)</item>
-        <item>25LC256  —  32 KB       (256 Kbit)</item>
-        <item>25LC512  —  64 KB       (512 Kbit)</item>
-        <item>25LC1024 —  128 KB      (1 Mbit)</item>
-        <item>M95M02-DR — 256 KB      (2 Mbit)</item>
-        <item>M95M04-DR — 512 KB      (4 Mbit)</item>
-        <!-- Flash NOR W25Qxx / MX25Lxx (índices 13-17) -->
-        <item>W25Q08 / MX25L80  —  1 MB   (Flash NOR)</item>
-        <item>W25Q16 / MX25L16  —  2 MB   (Flash NOR)</item>
-        <item>W25Q32 / MX25L32  —  4 MB   (Flash NOR)</item>
-        <item>W25Q64 / MX25L64  —  8 MB   (Flash NOR)</item>
-        <item>W25Q128 / MX25L128 — 16 MB  (Flash NOR)</item>
+        <item>25LC010A —  128 bytes (1 Kbit)</item>
+        <item>25LC020A —  256 bytes (2 Kbit)</item>
+        <item>25LC040A —  512 bytes (4 Kbit)</item>
+        <item>25LC080  —  1 KB      (8 Kbit)</item>
+        <item>25LC160  —  2 KB      (16 Kbit)</item>
+        <item>25LC320  —  4 KB      (32 Kbit)</item>
+        <item>25LC640  —  8 KB      (64 Kbit)</item>
+        <item>25LC128  —  16 KB     (128 Kbit)</item>
+        <item>25LC256  —  32 KB     (256 Kbit)</item>
+        <item>25LC512  —  64 KB     (512 Kbit)</item>
+        <item>25LC1024 — 128 KB    (1 Mbit)</item>
+        <item>M95M02-DR — 256 KB   (2 Mbit)</item>
+        <item>M95M04-DR — 512 KB   (4 Mbit)</item>
+        <item>W25Q08 / GD25Q80  —  1 MB (8 Mbit — Flash NOR)</item>
+        <item>W25Q16 / MX25L16  —  2 MB (16 Mbit — Flash NOR)</item>
+        <item>W25Q32 / MX25L32  —  4 MB (32 Mbit — Flash NOR)</item>
+        <item>W25Q64 / MX25L64  —  8 MB (64 Mbit — Flash NOR)</item>
+        <item>W25Q128 / MX25L128 — 16 MB (128 Mbit — Flash NOR)</item>
     </string-array>
 
     <!-- Connection / state strings -->

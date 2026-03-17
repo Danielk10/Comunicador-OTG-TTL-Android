@@ -734,6 +734,27 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
                             else for (byte a : found)
                                     sb.append(String.format("0x%02X ", a & 0xFF));
                             log(sb.toString());
+
+                            // AUTO-SELECTION I2C
+                            if (found.length > 0) {
+                                runOnUiThread(() -> {
+                                    // Sugerir modelo basado en la cantidad de direcciones
+                                    int modelIdx = -1;
+                                    if (found.length == 8) modelIdx = 4; // 24C16
+                                    else if (found.length == 4) modelIdx = 3; // 24C08
+                                    else if (found.length == 2) modelIdx = 2; // 24C04
+                                    else if (found.length == 1) {
+                                        // Si es 0x50, podría ser desde 24C32 hasta 24C1024. 24C128 es intermedio.
+                                        if ((found[0] & 0xFF) == 0x50) modelIdx = 7; 
+                                    }
+
+                                    if (spinnerProtocol.getSelectedItemPosition() != 0) {
+                                        spinnerProtocol.setSelection(0);
+                                        updateModelSpinner(0);
+                                    }
+                                    if (modelIdx != -1) spinnerModel.setSelection(modelIdx);
+                                });
+                            }
                             updateUIState(true);
                             return;
                         }
@@ -751,6 +772,24 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
                         } else {
                             log(String.format("JEDEC ID: %02X %02X %02X",
                                     j[0] & 0xFF, j[1] & 0xFF, j[2] & 0xFF));
+
+                            // AUTO-SELECTION SPI / FLASH
+                            if (j[0] != (byte) 0xFF && j[0] != 0x00) {
+                                runOnUiThread(() -> {
+                                    if (spinnerProtocol.getSelectedItemPosition() != 1) {
+                                        spinnerProtocol.setSelection(1);
+                                        updateModelSpinner(1);
+                                    }
+                                    int cap = j[2] & 0xFF;
+                                    // Mapeo JEDEC (2^cap) a índice de spinner: 0x14(20) -> 13, 0x15(21) -> 14, etc.
+                                    if (cap >= 0x10 && cap <= 0x1C) {
+                                        int idx = cap - 7; 
+                                        if (idx >= 0 && idx < spinnerModel.getCount()) {
+                                            spinnerModel.setSelection(idx);
+                                        }
+                                    }
+                                });
+                            }
                             updateUIState(true);
                         }
                     }
