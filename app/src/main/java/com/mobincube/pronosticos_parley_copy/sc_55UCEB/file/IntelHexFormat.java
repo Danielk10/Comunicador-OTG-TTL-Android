@@ -85,7 +85,10 @@ public class IntelHexFormat {
     }
 
     public static String generateIntelHex(byte[] data) {
-        StringBuilder sb = new StringBuilder();
+        // Pre-calcular capacidad: cada linea ~45 chars para 16 bytes de datos
+        // + registros Extended Linear Address cada 64KB
+        int estimatedLines = (data.length + 15) / 16;
+        StringBuilder sb = new StringBuilder(estimatedLines * 46 + 100);
         int address = 0;
 
         while (address < data.length) {

@@ -41,6 +41,8 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class MainActivity extends AppCompatActivity implements UsbSerialListener {
 
@@ -65,6 +67,10 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
     // ── Full Dump SPI ───────────────────────────────────────────────────────
     private volatile boolean pendingFullDump = false;
 
+    // ── Scan combinado I2C+SPI ──────────────────────────────────────────────
+    private byte[] scanI2cAddresses;   // Resultado del I2C scan (dirs 7-bit)
+    private byte[] scanJedecId;        // Resultado JEDEC 3 bytes (o null)
+
     // ── Helpers de UI ───────────────────────────────────────────────────────
     private LogHelper       logHelper;
     private HexViewerHelper hexHelper;
@@ -74,10 +80,13 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
     private byte[]                eepromBuffer;
     private volatile int          currentAddress = 0;
     private volatile int          totalSize      = 0;
+    private volatile int          chunkBytesReceived = 0; // FIX: contador persistente por chunk
     private ByteArrayOutputStream readStream;
 
     private static final int MAX_WRITE_CHUNK = 64;
     private static final int READ_CHUNK      = 64;
+
+    private final ExecutorService bgExecutor = Executors.newSingleThreadExecutor();
 
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
     private Runnable timeoutRunnable;
@@ -240,6 +249,7 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
         if (state != ProtocolState.READING) return;
         if (currentAddress >= totalSize)    { finishRead(); return; }
         int len = Math.min(READ_CHUNK, totalSize - currentAddress);
+        chunkBytesReceived = 0;  // FIX: reiniciar contador al inicio de cada chunk
         serialManager.sendData(
                 cachedProtocol.buildReadCommand(currentAddress, len, cachedModelIndex));
         resetTimeout(10000);
@@ -426,12 +436,13 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
 
     private void startScan() {
         if (!serialManager.isConnected()) return;
-        cacheProtocol();
-        state = ProtocolState.SCANNING_ID;
+        // Siempre escanear ambos buses: primero I2C, luego JEDEC SPI
+        scanI2cAddresses = null;
+        scanJedecId = null;
+        state = ProtocolState.SCANNING_BOTH_I2C;
         readStream = new ByteArrayOutputStream();
-        byte[] cmd = cachedProtocol.buildScanOrIdCommand();
-        log((cachedProtocol instanceof I2cProtocol) ? "Escaneando bus I2C..." : "Leyendo JEDEC ID...");
-        serialManager.sendData(cmd);
+        log("Escaneando bus I2C...");
+        serialManager.sendData(new byte[]{0x49, 0x53});  // I2C Scan
         resetTimeout(12000);
         updateUIState(true);
     }
@@ -506,15 +517,30 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
     }
 
     private void saveBuffer() {
-        try {
-            File dir = FileManager.saveMemoryDump(eepromBuffer);
-            log("Guardado en " + dir.getAbsolutePath());
-            Toast.makeText(this, "Guardado en Descargas/rom/", Toast.LENGTH_LONG).show();
-        } catch (IllegalArgumentException e) {
+        if (eepromBuffer == null || eepromBuffer.length == 0) {
             Toast.makeText(this, "No hay datos para guardar", Toast.LENGTH_SHORT).show();
-        } catch (java.io.IOException e) {
-            log("Error I/O guardando: " + e.getMessage());
+            return;
         }
+        // Copiar referencia para el hilo background
+        final byte[] dataCopy = eepromBuffer;
+        log("Exportando " + dataCopy.length + " bytes (.bin + .hex)...");
+        Toast.makeText(this, "Exportando...", Toast.LENGTH_SHORT).show();
+
+        bgExecutor.execute(() -> {
+            try {
+                File dir = FileManager.saveMemoryDump(dataCopy);
+                mainHandler.post(() -> {
+                    log("✓ Guardado en " + dir.getAbsolutePath());
+                    Toast.makeText(this, "Guardado en Descargas/rom/", Toast.LENGTH_LONG).show();
+                });
+            } catch (IllegalArgumentException e) {
+                mainHandler.post(() ->
+                        Toast.makeText(this, "No hay datos para guardar", Toast.LENGTH_SHORT).show());
+            } catch (java.io.IOException e) {
+                final String msg = e.getMessage();
+                mainHandler.post(() -> log("Error I/O guardando: " + msg));
+            }
+        });
     }
 
     // =========================================================================
@@ -621,12 +647,12 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
                 if (readStream == null) break;
 
                 int expectedThisChunk = Math.min(READ_CHUNK, totalSize - currentAddress);
-                int chunkReceived     = readStream.size() - currentAddress;
 
                 for (byte b : data) {
                     int val = b & 0xFF;
 
-                    if (chunkReceived == 0 && val == 0x58) {
+                    // FIX: usar chunkBytesReceived como variable de instancia persistente
+                    if (chunkBytesReceived == 0 && val == 0x58) {
                         state = ProtocolState.IDLE;
                         cancelTimeout();
                         final int addr = currentAddress;
@@ -641,11 +667,12 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
                         return;
                     }
 
-                    if (chunkReceived < expectedThisChunk) {
+                    if (chunkBytesReceived < expectedThisChunk) {
                         readStream.write(b);
-                        chunkReceived++;
+                        chunkBytesReceived++;
 
                     } else {
+                        // Ya recibimos todos los bytes del chunk, esperamos RESP_END
                         if (val == 0x55) {
                             currentAddress += expectedThisChunk;
                             final int prog = currentAddress;
@@ -731,8 +758,11 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
                             byte[] found = readStream.toByteArray();
                             StringBuilder sb = new StringBuilder("I2C Scan → ");
                             if (found.length == 0) sb.append("Sin dispositivos.");
-                            else for (byte a : found)
+                            else {
+                                sb.append("Detectados: ");
+                                for (byte a : found)
                                     sb.append(String.format("0x%02X ", a & 0xFF));
+                            }
                             log(sb.toString());
                             updateUIState(true);
                             return;
@@ -749,11 +779,97 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
                         if (pendingFullDump) {
                             startFullDumpAfterJedec(j[0], j[1], j[2]);
                         } else {
-                            log(String.format("JEDEC ID: %02X %02X %02X",
+                            log(String.format("SPI Scan → JEDEC ID: %02X %02X %02X",
                                     j[0] & 0xFF, j[1] & 0xFF, j[2] & 0xFF));
+                            autoSelectSpiModel(j[0], j[1], j[2]);
                             updateUIState(true);
                         }
                     }
+                }
+                break;
+            }
+
+            // ── SCANNING_BOTH_I2C — Fase 1: recibir resultado I2C Scan ──────
+            case SCANNING_BOTH_I2C: {
+                if (readStream == null) readStream = new ByteArrayOutputStream();
+                for (byte b : data) {
+                    int val = b & 0xFF;
+                    if (val == 0xFF) {
+                        cancelTimeout();
+                        scanI2cAddresses = readStream.toByteArray();
+
+                        StringBuilder sb = new StringBuilder("I2C Scan → ");
+                        if (scanI2cAddresses.length == 0) sb.append("Sin dispositivos.");
+                        else {
+                            sb.append("Detectados: ");
+                            for (byte a : scanI2cAddresses)
+                                sb.append(String.format("0x%02X ", a & 0xFF));
+                        }
+                        log(sb.toString());
+
+                        // Fase 2: ahora JEDEC SPI
+                        state = ProtocolState.SCANNING_BOTH_SPI;
+                        readStream = new ByteArrayOutputStream();
+                        log("Leyendo JEDEC ID...");
+                        serialManager.sendData(new byte[]{0x50, 0x4A});
+                        resetTimeout(5000);
+                        return;
+                    }
+                    if (val != 0x55 && val != 0x58) readStream.write(b);
+                }
+                break;
+            }
+
+            // ── SCANNING_BOTH_SPI — Fase 2: recibir JEDEC ID ────────────────
+            case SCANNING_BOTH_SPI: {
+                if (readStream == null) readStream = new ByteArrayOutputStream();
+                readStream.write(data, 0, data.length);
+                byte[] j = readStream.toByteArray();
+                if (j.length >= 3) {
+                    state = ProtocolState.IDLE;
+                    cancelTimeout();
+
+                    boolean jedecValid = (j[0] & 0xFF) != 0xFF && (j[0] & 0xFF) != 0x00
+                            && (j[2] & 0xFF) >= 0x10 && (j[2] & 0xFF) <= 0x1C;
+
+                    if (jedecValid) {
+                        scanJedecId = j;
+                        log(String.format("SPI Scan → JEDEC ID: %02X %02X %02X",
+                                j[0] & 0xFF, j[1] & 0xFF, j[2] & 0xFF));
+                    } else {
+                        scanJedecId = null;
+                        log(String.format("SPI Scan → JEDEC ID: %02X %02X %02X (no válido)",
+                                j[0] & 0xFF, j[1] & 0xFF, j[2] & 0xFF));
+                    }
+
+                    // Decidir auto-selección
+                    boolean hasI2c = scanI2cAddresses != null && scanI2cAddresses.length > 0;
+                    boolean hasSpi = scanJedecId != null;
+
+                    if (hasI2c && hasSpi) {
+                        // Ambos detectados: mantener protocolo actual, seleccionar chip
+                        int protoPos = spinnerProtocol.getSelectedItemPosition();
+                        if (protoPos == 0) {
+                            autoSelectI2cModel(scanI2cAddresses);
+                        } else {
+                            autoSelectSpiModel(scanJedecId[0], scanJedecId[1], scanJedecId[2]);
+                        }
+                        log("✓ Ambos buses detectados. Modelo auto-sugerido.");
+                    } else if (hasI2c) {
+                        // Solo I2C: cambiar a I2C si no estaba
+                        runOnUiThread(() -> spinnerProtocol.setSelection(0));
+                        autoSelectI2cModel(scanI2cAddresses);
+                        log("✓ Modelo I2C auto-sugerido.");
+                    } else if (hasSpi) {
+                        // Solo SPI: cambiar a SPI si no estaba
+                        runOnUiThread(() -> spinnerProtocol.setSelection(1));
+                        autoSelectSpiModel(scanJedecId[0], scanJedecId[1], scanJedecId[2]);
+                        log("✓ Modelo SPI Flash auto-sugerido.");
+                    } else {
+                        log("✗ No se detectaron chips I2C ni SPI.");
+                    }
+
+                    updateUIState(true);
                 }
                 break;
             }
@@ -875,10 +991,91 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
                 .putExtra("type", type));
     }
 
+    // =========================================================================
+    // AUTO-SELECCIÓN DE CHIP
+    // =========================================================================
+
+    /**
+     * Auto-selecciona el modelo I2C según las direcciones detectadas.
+     * Direcciones en rango 0x50-0x57 indican 24Cxx con N bloques.
+     * 1 dir → 24C01-24C128 (asumimos 24C128 = 16KB por defecto)
+     * 2 dirs → 24C04 (512B)
+     * 4 dirs → 24C08 (1KB)
+     * 8 dirs → 24C16 (2KB)
+     */
+    private void autoSelectI2cModel(byte[] addresses) {
+        if (addresses == null || addresses.length == 0) return;
+
+        // Contar cuántas direcciones están en rango 0x50-0x57
+        int eepromCount = 0;
+        for (byte a : addresses) {
+            int addr = a & 0xFF;
+            if (addr >= 0x50 && addr <= 0x57) eepromCount++;
+        }
+
+        final int modelIndex;
+        switch (eepromCount) {
+            case 8:  modelIndex = 4; break;  // 24C16 (2KB) — 8 bloques
+            case 4:  modelIndex = 3; break;  // 24C08 (1KB) — 4 bloques
+            case 2:  modelIndex = 2; break;  // 24C04 (512B) — 2 bloques
+            case 1:  modelIndex = 7; break;  // 24C128 (16KB) — suposición por defecto
+            default:
+                // Si hay 3, 5, 6 o 7 podría ser múltiples chips
+                modelIndex = 7; // 24C128 por defecto
+                break;
+        }
+
+        runOnUiThread(() -> {
+            spinnerProtocol.setSelection(0);  // Asegurar I2C
+            // Esperar a que el spinner de modelo se actualice
+            mainHandler.postDelayed(() -> {
+                if (modelIndex < spinnerModel.getCount()) {
+                    spinnerModel.setSelection(modelIndex);
+                }
+            }, 100);
+        });
+    }
+
+    /**
+     * Auto-selecciona el modelo SPI según el JEDEC ID.
+     * El byte de capacidad determina el tamaño: 2^cap bytes.
+     * Mapeo a índices del spinner SPI (13-17 = Flash NOR).
+     */
+    private void autoSelectSpiModel(byte mfr, byte memType, byte cap) {
+        int capVal = cap & 0xFF;
+        if ((mfr & 0xFF) == 0xFF || (mfr & 0xFF) == 0x00 || capVal < 0x10 || capVal > 0x1C) {
+            return;  // JEDEC inválido, no auto-seleccionar
+        }
+
+        // Mapeo capacity byte → índice del spinner SPI
+        // 0x14 → 1MB → idx 13, 0x15 → 2MB → idx 14, ...
+        final int modelIndex;
+        switch (capVal) {
+            case 0x14: modelIndex = 13; break;  // W25Q08 / GD25Q80 — 1 MB
+            case 0x15: modelIndex = 14; break;  // W25Q16 — 2 MB
+            case 0x16: modelIndex = 15; break;  // W25Q32 — 4 MB
+            case 0x17: modelIndex = 16; break;  // W25Q64 — 8 MB
+            case 0x18: modelIndex = 17; break;  // W25Q128 — 16 MB
+            default:   modelIndex = -1; break;
+        }
+
+        if (modelIndex < 0) return;
+
+        runOnUiThread(() -> {
+            spinnerProtocol.setSelection(1);  // Asegurar SPI
+            mainHandler.postDelayed(() -> {
+                if (modelIndex < spinnerModel.getCount()) {
+                    spinnerModel.setSelection(modelIndex);
+                }
+            }, 100);
+        });
+    }
+
     @Override
     protected void onDestroy() {
         super.onDestroy();
         serialManager.cleanup();
         mainHandler.removeCallbacksAndMessages(null);
+        bgExecutor.shutdownNow();
     }
 }

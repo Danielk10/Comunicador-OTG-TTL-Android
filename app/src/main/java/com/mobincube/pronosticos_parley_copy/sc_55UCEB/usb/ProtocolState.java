@@ -8,5 +8,7 @@ public enum ProtocolState {
     VERIFYING,
     PINGING,
     SCANNING_ID,
+    SCANNING_BOTH_I2C,   // Fase 1: escaneo I2C del scan combinado
+    SCANNING_BOTH_SPI,   // Fase 2: JEDEC SPI del scan combinado
     FULL_DUMPING
 }
