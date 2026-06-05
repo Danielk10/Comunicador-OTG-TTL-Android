@@ -5,15 +5,15 @@ plugins {
 android {
     namespace 'com.mobincube.pronosticos_parley_copy.sc_55UCEB'
     compileSdk {
-        version = release(36)
+        version = release(37)
     }
 
     defaultConfig {
         applicationId "com.mobincube.pronosticos_parley_copy.sc_55UCEB"
         minSdk 23
-        targetSdk 36
-        versionCode 3
-        versionName "1.0.2"
+        targetSdk 37
+        versionCode 4
+        versionName "1.0.3"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
