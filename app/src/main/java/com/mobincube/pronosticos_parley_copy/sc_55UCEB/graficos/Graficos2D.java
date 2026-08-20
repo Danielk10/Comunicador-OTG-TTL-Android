@@ -1,11 +1,11 @@
-package com.mobincube.pronosticos_parley_copy.sc_55UCEB.graficos;
+package com.mobincube.keystore.jks_parley_copy.sc_55UCEB.graficos;
 
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Rect;
 
-import com.mobincube.pronosticos_parley_copy.sc_55UCEB.nucleo.Graficos;
-import com.mobincube.pronosticos_parley_copy.sc_55UCEB.nucleo.Textura;
+import com.mobincube.keystore.jks_parley_copy.sc_55UCEB.nucleo.Graficos;
+import com.mobincube.keystore.jks_parley_copy.sc_55UCEB.nucleo.Textura;
 
 public class Graficos2D implements Graficos {
 

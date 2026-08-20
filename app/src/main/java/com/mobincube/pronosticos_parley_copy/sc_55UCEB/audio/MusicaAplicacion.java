@@ -1,10 +1,10 @@
-package com.mobincube.pronosticos_parley_copy.sc_55UCEB.audio;
+package com.mobincube.keystore.jks_parley_copy.sc_55UCEB.audio;
 
 import android.content.res.AssetFileDescriptor;
 import android.media.MediaPlayer;
 import android.media.MediaPlayer.OnCompletionListener;
 
-import com.mobincube.pronosticos_parley_copy.sc_55UCEB.nucleo.Musica;
+import com.mobincube.keystore.jks_parley_copy.sc_55UCEB.nucleo.Musica;
 
 public class MusicaAplicacion implements Musica, OnCompletionListener {
 

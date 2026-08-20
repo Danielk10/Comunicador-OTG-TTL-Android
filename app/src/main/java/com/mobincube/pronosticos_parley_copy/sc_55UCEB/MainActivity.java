@@ -1,4 +1,4 @@
-package com.mobincube.pronosticos_parley_copy.sc_55UCEB;
+package com.mobincube.keystore.jks_parley_copy.sc_55UCEB;
 
 import android.content.Intent;
 import android.graphics.Color;
@@ -21,20 +21,20 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
-import com.mobincube.pronosticos_parley_copy.sc_55UCEB.eeprom.EepromProtocol;
-import com.mobincube.pronosticos_parley_copy.sc_55UCEB.eeprom.I2cProtocol;
-import com.mobincube.pronosticos_parley_copy.sc_55UCEB.eeprom.SpiProtocol;
-import com.mobincube.pronosticos_parley_copy.sc_55UCEB.exception.HexParseException;
-import com.mobincube.pronosticos_parley_copy.sc_55UCEB.file.FileManager;
-import com.mobincube.pronosticos_parley_copy.sc_55UCEB.file.IntelHexFormat;
-import com.mobincube.pronosticos_parley_copy.sc_55UCEB.ui.AboutActivity;
-import com.mobincube.pronosticos_parley_copy.sc_55UCEB.ui.FirmwareActivity;
-import com.mobincube.pronosticos_parley_copy.sc_55UCEB.ui.HexViewerHelper;
-import com.mobincube.pronosticos_parley_copy.sc_55UCEB.ui.LogHelper;
-import com.mobincube.pronosticos_parley_copy.sc_55UCEB.ui.PrivacyPolicyActivity;
-import com.mobincube.pronosticos_parley_copy.sc_55UCEB.usb.ProtocolState;
-import com.mobincube.pronosticos_parley_copy.sc_55UCEB.usb.UsbSerialListener;
-import com.mobincube.pronosticos_parley_copy.sc_55UCEB.usb.UsbSerialManager;
+import com.mobincube.keystore.jks_parley_copy.sc_55UCEB.eeprom.EepromProtocol;
+import com.mobincube.keystore.jks_parley_copy.sc_55UCEB.eeprom.I2cProtocol;
+import com.mobincube.keystore.jks_parley_copy.sc_55UCEB.eeprom.SpiProtocol;
+import com.mobincube.keystore.jks_parley_copy.sc_55UCEB.exception.HexParseException;
+import com.mobincube.keystore.jks_parley_copy.sc_55UCEB.file.FileManager;
+import com.mobincube.keystore.jks_parley_copy.sc_55UCEB.file.IntelHexFormat;
+import com.mobincube.keystore.jks_parley_copy.sc_55UCEB.ui.AboutActivity;
+import com.mobincube.keystore.jks_parley_copy.sc_55UCEB.ui.FirmwareActivity;
+import com.mobincube.keystore.jks_parley_copy.sc_55UCEB.ui.HexViewerHelper;
+import com.mobincube.keystore.jks_parley_copy.sc_55UCEB.ui.LogHelper;
+import com.mobincube.keystore.jks_parley_copy.sc_55UCEB.ui.PrivacyPolicyActivity;
+import com.mobincube.keystore.jks_parley_copy.sc_55UCEB.usb.ProtocolState;
+import com.mobincube.keystore.jks_parley_copy.sc_55UCEB.usb.UsbSerialListener;
+import com.mobincube.keystore.jks_parley_copy.sc_55UCEB.usb.UsbSerialManager;
 import com.hoho.android.usbserial.driver.UsbSerialPort;
 
 import java.io.ByteArrayOutputStream;
@@ -987,7 +987,7 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
     /** Abre el diagrama de hardware correspondiente */
     private void openHardwareInfo(int type) {
         startActivity(new Intent(this,
-                com.mobincube.pronosticos_parley_copy.sc_55UCEB.ui.HardwareInfoActivity.class)
+                com.mobincube.keystore.jks_parley_copy.sc_55UCEB.ui.HardwareInfoActivity.class)
                 .putExtra("type", type));
     }
 

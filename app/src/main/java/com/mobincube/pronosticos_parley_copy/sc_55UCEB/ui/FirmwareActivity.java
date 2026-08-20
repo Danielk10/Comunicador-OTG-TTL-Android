@@ -1,4 +1,4 @@
-package com.mobincube.pronosticos_parley_copy.sc_55UCEB.ui;
+package com.mobincube.keystore.jks_parley_copy.sc_55UCEB.ui;
 
 import android.content.Intent;
 import android.net.Uri;
@@ -10,7 +10,7 @@ import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
-import com.mobincube.pronosticos_parley_copy.sc_55UCEB.R;
+import com.mobincube.keystore.jks_parley_copy.sc_55UCEB.R;
 
 import java.io.File;
 import java.io.FileOutputStream;

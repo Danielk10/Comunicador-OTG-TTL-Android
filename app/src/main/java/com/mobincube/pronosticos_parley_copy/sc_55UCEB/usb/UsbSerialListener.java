@@ -1,4 +1,4 @@
-package com.mobincube.pronosticos_parley_copy.sc_55UCEB.usb;
+package com.mobincube.keystore.jks_parley_copy.sc_55UCEB.usb;
 
 public interface UsbSerialListener {
     void onSerialConnect();

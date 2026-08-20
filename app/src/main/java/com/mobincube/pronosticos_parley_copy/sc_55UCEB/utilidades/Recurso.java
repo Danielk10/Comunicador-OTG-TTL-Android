@@ -1,4 +1,4 @@
-package com.mobincube.pronosticos_parley_copy.sc_55UCEB.utilidades;
+package com.mobincube.keystore.jks_parley_copy.sc_55UCEB.utilidades;
 
 import android.content.Context;
 import android.content.res.AssetFileDescriptor;
@@ -8,12 +8,12 @@ import android.media.AudioAttributes;
 import android.media.AudioManager;
 import android.media.SoundPool;
 
-import com.mobincube.pronosticos_parley_copy.sc_55UCEB.audio.MusicaAplicacion;
-import com.mobincube.pronosticos_parley_copy.sc_55UCEB.audio.SonidoAplicacion;
-import com.mobincube.pronosticos_parley_copy.sc_55UCEB.graficos.Textura2D;
-import com.mobincube.pronosticos_parley_copy.sc_55UCEB.nucleo.Musica;
-import com.mobincube.pronosticos_parley_copy.sc_55UCEB.nucleo.Sonido;
-import com.mobincube.pronosticos_parley_copy.sc_55UCEB.nucleo.Textura;
+import com.mobincube.keystore.jks_parley_copy.sc_55UCEB.audio.MusicaAplicacion;
+import com.mobincube.keystore.jks_parley_copy.sc_55UCEB.audio.SonidoAplicacion;
+import com.mobincube.keystore.jks_parley_copy.sc_55UCEB.graficos.Textura2D;
+import com.mobincube.keystore.jks_parley_copy.sc_55UCEB.nucleo.Musica;
+import com.mobincube.keystore.jks_parley_copy.sc_55UCEB.nucleo.Sonido;
+import com.mobincube.keystore.jks_parley_copy.sc_55UCEB.nucleo.Textura;
 
 import java.io.IOException;
 import java.io.InputStream;

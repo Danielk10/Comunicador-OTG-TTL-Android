@@ -1,12 +1,12 @@
-package com.mobincube.pronosticos_parley_copy.sc_55UCEB.graficos;
+package com.mobincube.keystore.jks_parley_copy.sc_55UCEB.graficos;
 
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Matrix;
 
-import com.mobincube.pronosticos_parley_copy.sc_55UCEB.nucleo.Graficos;
-import com.mobincube.pronosticos_parley_copy.sc_55UCEB.nucleo.Graficos.FormatoTextura;
-import com.mobincube.pronosticos_parley_copy.sc_55UCEB.nucleo.Textura;
+import com.mobincube.keystore.jks_parley_copy.sc_55UCEB.nucleo.Graficos;
+import com.mobincube.keystore.jks_parley_copy.sc_55UCEB.nucleo.Graficos.FormatoTextura;
+import com.mobincube.keystore.jks_parley_copy.sc_55UCEB.nucleo.Textura;
 
 public class Textura2D implements Textura {
 

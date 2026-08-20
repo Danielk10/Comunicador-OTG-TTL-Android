@@ -1,6 +1,6 @@
-package com.mobincube.pronosticos_parley_copy.sc_55UCEB.file;
+package com.mobincube.keystore.jks_parley_copy.sc_55UCEB.file;
 
-import com.mobincube.pronosticos_parley_copy.sc_55UCEB.exception.HexParseException;
+import com.mobincube.keystore.jks_parley_copy.sc_55UCEB.exception.HexParseException;
 import java.nio.charset.StandardCharsets;
 
 public class IntelHexFormat {

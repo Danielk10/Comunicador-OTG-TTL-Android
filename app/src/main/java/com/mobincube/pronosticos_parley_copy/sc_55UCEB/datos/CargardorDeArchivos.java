@@ -1,9 +1,9 @@
-package com.mobincube.pronosticos_parley_copy.sc_55UCEB.datos;
+package com.mobincube.keystore.jks_parley_copy.sc_55UCEB.datos;
 
 import android.app.Activity;
 import android.content.Context;
 import android.content.res.AssetManager;
-import com.mobincube.pronosticos_parley_copy.sc_55UCEB.nucleo.Datos;
+import com.mobincube.keystore.jks_parley_copy.sc_55UCEB.nucleo.Datos;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;

@@ -1,9 +1,12 @@
 # OTG Flash EEPROM - Programador Universal de Memorias
 
-![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)
-![Android](https://img.shields.io/badge/Android-23%2B-green.svg)
-![Hardware](https://img.shields.io/badge/Hardware-PIC16F628A-orange.svg)
-![Protocol](https://img.shields.io/badge/Protocol-I2C%20%7C%20SPI-blue.svg)
+[![Android](https://img.shields.io/badge/Android-6.0%20(API%2023)%20a%20Android%2017%20(API%2037)-3DDC84?logo=android&logoColor=white)](https://developer.android.com/)
+[![Target SDK](https://img.shields.io/badge/Target%20SDK-API%2037%20(Android%2017)-3DDC84?logo=android&logoColor=white)](https://developer.android.com/)
+[![AGP](https://img.shields.io/badge/AGP-9.2.1-blue?logo=android)](https://developer.android.com/studio/releases/gradle-plugin)
+[![Gradle](https://img.shields.io/badge/Gradle-9.6.0-02303A?logo=gradle&logoColor=white)](https://gradle.org/)
+[![Hardware](https://img.shields.io/badge/Hardware-PIC16F628A-orange.svg)](https://www.microchip.com/)
+[![Protocol](https://img.shields.io/badge/Protocol-I2C%20%7C%20SPI-blue.svg)](./PICMEM_v3_Protocolo.md)
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](./LICENSE)
 
 **OTG Flash EEPROM** es una aplicación Android profesional que convierte tu smartphone en un programador y lector universal de memorias EEPROM. Utilizando un microcontrolador PIC16F628A como puente de comunicación, la aplicación permite grabar y leer memorias I2C (24Cxx) y SPI Flash (25Cxx, W25Qxx) directamente desde tu dispositivo móvil.
 
@@ -32,7 +35,7 @@ El proyecto utiliza una arquitectura de dos capas:
 1. **Aplicación Android (El Cerebro)**: 
    - Interfaz de usuario con Material Design
    - Procesamiento de archivos Intel HEX y binarios
-   - Comunicación USB OTG a 9600 baudios mediante [usb-serial-for-android](https://github.com/mik3y/usb-serial-for-android)
+   - Comunicación USB OTG a 9600 baudios mediante [usb-serial-for-android](https://github.com/mik3y/usb-serial-for-android) v3.11.0
    - Gestión de permisos y almacenamiento
 
 2. **Firmware PIC16F628A (El Intérprete)**:
@@ -221,7 +224,7 @@ El proyecto sigue principios de Programación Orientada a Objetos (POO) con sepa
 ### Estructura de Paquetes
 
 ```
-com.mobincube.pronosticos_parley_copy.sc_55UCEB/
+com.mobincube.keystore.jks_parley_copy.sc_55UCEB/
 ├── usb/
 │   └── UsbSerialManager.java          # Gestión de comunicación USB OTG
 ├── eeprom/
@@ -243,7 +246,7 @@ com.mobincube.pronosticos_parley_copy.sc_55UCEB/
 
 #### 1. Capa de Comunicación USB
 - **UsbSerialManager**: Maneja permisos, configuración 9600 8N1, lectura/escritura de bytes
-- Basado en [usb-serial-for-android](https://github.com/mik3y/usb-serial-for-android) v3.10.0
+- Basado en [usb-serial-for-android](https://github.com/mik3y/usb-serial-for-android) v3.11.0
 
 #### 2. Capa de Protocolos
 - **I2cProtocol**: Calcula direcciones de bloque para memorias 24Cxx, gestiona page writes
@@ -380,8 +383,36 @@ Con las siguientes condiciones:
 
 ---
 
+## 🛠️ Compilación y Configuración de Android
+
+El proyecto utiliza las siguientes especificaciones técnicas modernas:
+
+- **Android SDK:** Compile SDK 37 / Target SDK 37 / Min SDK 23
+- **Android Build Tools:** 37.0.0
+- **Android NDK:** 30.0.14904198 rc1
+- **CMake:** 4.1.2
+- **Android Gradle Plugin (AGP):** 9.2.1
+- **Gradle:** 9.6.0 (Gradle Wrapper)
+- **Firma Release:** Configurada vía `keystore.properties` (con fallback a variables de entorno para CI/CD).
+- **Ruta de compilación (Build Output):** Redirigida a `/tmp/calculo` para mantener limpio el repositorio.
+
+### Preparación del SDK:
+```bash
+bash setup-sdk.sh
+```
+
+### Compilación:
+- **APK Debug:** `./gradlew assembleDebug` (Salida: `/tmp/calculo/outputs/apk/debug/app-debug.apk`)
+- **APK Release firmado:** `./gradlew assembleRelease` (Salida: `/tmp/calculo/outputs/apk/release/app-release.apk`)
+- **AAB Release firmado (Play Store):** `./gradlew bundleRelease` (Salida: `/tmp/calculo/outputs/bundle/release/app-release.aab`)
+
+Consulta [GEMINI.md](GEMINI.md) para más detalles técnicos de compilación y firma.
+
+---
+
 ## 🔗 Enlaces Útiles
 
+- **Instrucciones Técnicas y Compilación**: [GEMINI.md](GEMINI.md)
 - **Documentación del Protocolo**: [PICMEM_v3_Protocolo.md](PICMEM_v3_Protocolo.md)
 - **Código Fuente Firmware**: [pic_firmware_v3.c](pic_firmware_v3.c)
 - **Firmware Compilado**: [pic_firmware_v3.hex](pic_firmware_v3.hex)
@@ -393,7 +424,7 @@ Con las siguientes condiciones:
 
 ## ⭐ Agradecimientos
 
-- Librería USB serial: **[usb-serial-for-android](https://github.com/mik3y/usb-serial-for-android)** v3.10.0 por mik3y
+- Librería USB serial: **[usb-serial-for-android](https://github.com/mik3y/usb-serial-for-android)** v3.11.0 por mik3y
 - Documentación de protocolo I2C: Microchip 24Cxx datasheets
 - Documentación de protocolo SPI: Winbond W25Qxx datasheets
 - Compilador SDCC: Small Device C Compiler Team

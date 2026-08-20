@@ -1,4 +1,4 @@
-package com.mobincube.pronosticos_parley_copy.sc_55UCEB.ui;
+package com.mobincube.keystore.jks_parley_copy.sc_55UCEB.ui;
 
 import android.app.Activity;
 import android.graphics.drawable.ColorDrawable;
@@ -10,7 +10,7 @@ import android.widget.PopupWindow;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
-import com.mobincube.pronosticos_parley_copy.sc_55UCEB.R;
+import com.mobincube.keystore.jks_parley_copy.sc_55UCEB.R;
 
 public class HexViewerHelper {
 

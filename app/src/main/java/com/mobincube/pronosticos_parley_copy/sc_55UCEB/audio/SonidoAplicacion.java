@@ -1,8 +1,8 @@
-package com.mobincube.pronosticos_parley_copy.sc_55UCEB.audio;
+package com.mobincube.keystore.jks_parley_copy.sc_55UCEB.audio;
 
 import android.media.SoundPool;
 
-import com.mobincube.pronosticos_parley_copy.sc_55UCEB.nucleo.Sonido;
+import com.mobincube.keystore.jks_parley_copy.sc_55UCEB.nucleo.Sonido;
 
 public class SonidoAplicacion implements Sonido {
 
