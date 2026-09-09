@@ -23,7 +23,7 @@ android {
         applicationId "com.mobincube.pronosticos_parley_copy.sc_55UCEB"
         minSdk 23
         targetSdk 37
-        versionCode 6
+        versionCode 7
         versionName "1.2.0"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
