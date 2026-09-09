@@ -508,19 +508,12 @@
     </LinearLayout>
 
     <!-- ── Banner Inferior Google AdMob ──────────────────────────────────── -->
-    <LinearLayout
+    <FrameLayout
         android:id="@+id/bannerContainer"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:gravity="center"
-        android:background="@color/bg_dark">
-
-        <com.google.android.gms.ads.AdView
-            android:id="@+id/adViewBanner"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            app:adSize="BANNER"
-            app:adUnitId="ca-app-pub-5141499161332805/7125155396" />
-    </LinearLayout>
+        android:minHeight="50dp"
+        android:layout_gravity="center_horizontal"
+        android:background="@color/bg_dark" />
 
 </LinearLayout>

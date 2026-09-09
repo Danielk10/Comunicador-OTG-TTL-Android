@@ -17,6 +17,8 @@ import android.widget.ImageView;
 import android.widget.ScrollView;
 import android.widget.Spinner;
 import android.widget.TextView;
+import android.view.Gravity;
+import android.widget.FrameLayout;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -25,6 +27,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import com.google.android.gms.ads.AdListener;
 import com.google.android.gms.ads.AdLoader;
 import com.google.android.gms.ads.AdRequest;
+import com.google.android.gms.ads.AdSize;
 import com.google.android.gms.ads.AdView;
 import com.google.android.gms.ads.LoadAdError;
 import com.google.android.gms.ads.MobileAds;
@@ -68,6 +71,7 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
     private View     statusDot,        layoutStatus;
 
     // ── Google AdMob ────────────────────────────────────────────────────────
+    private FrameLayout  bannerContainer;
     private AdView       adViewBanner;
     private View         nativeAdCard;
     private NativeAdView nativeAdView;
@@ -186,7 +190,7 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
         statusDot       = findViewById(R.id.statusDot);
         layoutStatus    = findViewById(R.id.layoutStatus);
 
-        adViewBanner    = findViewById(R.id.adViewBanner);
+        bannerContainer = findViewById(R.id.bannerContainer);
         nativeAdCard    = findViewById(R.id.nativeAdCard);
         nativeAdView    = findViewById(R.id.nativeAdView);
 
@@ -1099,16 +1103,58 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
     // =========================================================================
 
     private void initAds() {
-        MobileAds.initialize(this, initializationStatus -> {});
+        MobileAds.initialize(this, initializationStatus -> {
+            Log.d(TAG, "AdMob SDK inicializado correctamente.");
+            runOnUiThread(() -> {
+                loadBannerAd();
+                loadNativeAd();
+            });
+        });
+    }
 
-        // Cargar Banner Inferior
-        if (adViewBanner != null) {
+    private void loadBannerAd() {
+        if (bannerContainer == null) return;
+        try {
+            if (adViewBanner != null) {
+                adViewBanner.destroy();
+                bannerContainer.removeAllViews();
+            }
+
+            adViewBanner = new AdView(this);
+            adViewBanner.setAdUnitId("ca-app-pub-5141499161332805/7125155396");
+            adViewBanner.setAdSize(AdSize.BANNER);
+
+            adViewBanner.setAdListener(new AdListener() {
+                @Override
+                public void onAdLoaded() {
+                    super.onAdLoaded();
+                    Log.d(TAG, "AdMob Banner cargado exitosamente.");
+                    bannerContainer.setVisibility(View.VISIBLE);
+                }
+
+                @Override
+                public void onAdFailedToLoad(@NonNull LoadAdError adError) {
+                    super.onAdFailedToLoad(adError);
+                    Log.e(TAG, "AdMob Banner fallo al cargar: Código=" + adError.getCode()
+                            + " (" + getAdMobErrorMessage(adError.getCode()) + ")"
+                            + ", Mensaje=" + adError.getMessage()
+                            + ", Domain=" + adError.getDomain()
+                            + ", ResponseInfo=" + adError.getResponseInfo());
+                }
+            });
+
+            FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(
+                    FrameLayout.LayoutParams.WRAP_CONTENT,
+                    FrameLayout.LayoutParams.WRAP_CONTENT
+            );
+            lp.gravity = Gravity.CENTER;
+            bannerContainer.addView(adViewBanner, lp);
+
             AdRequest bannerRequest = new AdRequest.Builder().build();
             adViewBanner.loadAd(bannerRequest);
+        } catch (Exception e) {
+            Log.e(TAG, "Error inicializando Banner AdMob: " + e.getMessage(), e);
         }
-
-        // Cargar Anuncio Nativo
-        loadNativeAd();
     }
 
     private void loadNativeAd() {
@@ -1130,7 +1176,9 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
                 .withAdListener(new AdListener() {
                     @Override
                     public void onAdFailedToLoad(@NonNull LoadAdError adError) {
-                        Log.d(TAG, "Native ad failed to load: " + adError.getMessage());
+                        Log.e(TAG, "AdMob Nativo fallo al cargar: Código=" + adError.getCode()
+                                + " (" + getAdMobErrorMessage(adError.getCode()) + ")"
+                                + ", Mensaje=" + adError.getMessage());
                         nativeAdCard.setVisibility(View.GONE);
                     }
                 })
@@ -1138,6 +1186,21 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
                 .build();
 
         adLoader.loadAd(new AdRequest.Builder().build());
+    }
+
+    private String getAdMobErrorMessage(int code) {
+        switch (code) {
+            case AdRequest.ERROR_CODE_INTERNAL_ERROR:
+                return "ERROR_CODE_INTERNAL_ERROR (Error interno del servidor AdMob)";
+            case AdRequest.ERROR_CODE_INVALID_REQUEST:
+                return "ERROR_CODE_INVALID_REQUEST (Petición inválida o Ad Unit ID no reconocido)";
+            case AdRequest.ERROR_CODE_NETWORK_ERROR:
+                return "ERROR_CODE_NETWORK_ERROR (Problema de conexión o red)";
+            case AdRequest.ERROR_CODE_NO_FILL:
+                return "ERROR_CODE_NO_FILL (Sin inventario / Unidad nueva o pendiente de indexar en Google AdMob)";
+            default:
+                return "CODIGO_" + code;
+        }
     }
 
     private void populateNativeAdView(NativeAd nativeAd, NativeAdView adView) {
@@ -1216,6 +1279,9 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
     protected void onDestroy() {
         if (adViewBanner != null) {
             adViewBanner.destroy();
+        }
+        if (bannerContainer != null) {
+            bannerContainer.removeAllViews();
         }
         if (currentNativeAd != null) {
             currentNativeAd.destroy();
