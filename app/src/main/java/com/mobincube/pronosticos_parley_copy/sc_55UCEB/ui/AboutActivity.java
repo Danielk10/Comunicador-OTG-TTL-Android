@@ -46,7 +46,7 @@ public class AboutActivity extends AppCompatActivity {
 
         if (getSupportActionBar() != null) {
             getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-            getSupportActionBar().setTitle("Acerca de");
+            getSupportActionBar().setTitle(R.string.menu_about);
         }
 
         // ── Versión dinámica ──────────────────────────────────────────
@@ -56,8 +56,7 @@ public class AboutActivity extends AppCompatActivity {
                     .getPackageInfo(getPackageName(), 0);
             long code = android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P ?
                     pi.getLongVersionCode() : pi.versionCode;
-            tvVersion.setText("Versión " + pi.versionName
-                    + "  (build " + code + ")");
+            tvVersion.setText(getString(R.string.about_version_format, pi.versionName, code));
         } catch (PackageManager.NameNotFoundException e) {
             tvVersion.setText(getString(R.string.about_version));
         }
@@ -90,7 +89,7 @@ public class AboutActivity extends AppCompatActivity {
                     Uri.parse("mailto:" + DEV_EMAIL));
             intent.putExtra(Intent.EXTRA_SUBJECT, "OTG Flash EEPROM");
             try {
-                startActivity(Intent.createChooser(intent, "Enviar email"));
+                startActivity(Intent.createChooser(intent, getString(R.string.about_send_email)));
             } catch (Exception e) {
                 Toast.makeText(this, DEV_EMAIL, Toast.LENGTH_LONG).show();
             }
@@ -119,7 +118,7 @@ public class AboutActivity extends AppCompatActivity {
         try {
             startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(url)));
         } catch (Exception e) {
-            Toast.makeText(this, "No se pudo abrir: " + url, Toast.LENGTH_LONG).show();
+            Toast.makeText(this, getString(R.string.toast_cannot_open_url, url), Toast.LENGTH_LONG).show();
         }
     }
 }

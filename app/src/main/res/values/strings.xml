@@ -7,16 +7,7 @@
         <item>SPI (25Cxx / W25Qxx)</item>
     </string-array>
 
-    <!--
-        EEPROMs I2C 24Cxx
-        Índices 0-11 deben coincidir exactamente con I2cProtocol.i2cSizes[]
-        0 = 128 B (1 Kbit)   |  6 = 8 KB  (64 Kbit)
-        1 = 256 B (2 Kbit)   |  7 = 16 KB (128 Kbit)
-        2 = 512 B (4 Kbit)   |  8 = 32 KB (256 Kbit)
-        3 = 1 KB  (8 Kbit)   |  9 = 64 KB (512 Kbit)
-        4 = 2 KB  (16 Kbit)  | 10 = 128 KB (1 Mbit)
-        5 = 4 KB  (32 Kbit)  | 11 = 256 KB (2 Mbit)
-    -->
+    <!-- EEPROMs I2C 24Cxx -->
     <string-array name="eeprom_i2c_sizes">
         <item>24C01  —  128 bytes   (1 Kbit)</item>
         <item>24C02  —  256 bytes   (2 Kbit)</item>
@@ -32,14 +23,8 @@
         <item>24C2048 — 256 KB      (2 Mbit)</item>
     </string-array>
 
-    <!--
-        EEPROMs SPI 25Cxx + Flash NOR W25Qxx
-        Índices 0-12  → EEPROM SPI 25LCxx (sin Chip Erase nativo, addr 1-2 bytes)
-        Índices 13-17 → Flash NOR W25Qxx / MX25Lxx (con Chip Erase 0xC7, addr 3 bytes)
-        Deben coincidir exactamente con SpiProtocol.spiSizes[]
-    -->
+    <!-- EEPROMs SPI 25Cxx + Flash NOR W25Qxx -->
     <string-array name="eeprom_spi_sizes">
-        <!-- EEPROM SPI 25LCxx (índices 0-12) -->
         <item>25LC010A —  128 bytes   (1 Kbit)</item>
         <item>25LC020A —  256 bytes   (2 Kbit)</item>
         <item>25LC040A —  512 bytes   (4 Kbit)</item>
@@ -53,7 +38,6 @@
         <item>25LC1024 —  128 KB      (1 Mbit)</item>
         <item>M95M02-DR — 256 KB      (2 Mbit)</item>
         <item>M95M04-DR — 512 KB      (4 Mbit)</item>
-        <!-- Flash NOR W25Qxx / MX25Lxx (índices 13-17) -->
         <item>W25Q08 / MX25L80  —  1 MB   (Flash NOR)</item>
         <item>W25Q16 / MX25L16  —  2 MB   (Flash NOR)</item>
         <item>W25Q32 / MX25L32  —  4 MB   (Flash NOR)</item>
@@ -61,20 +45,38 @@
         <item>W25Q128 / MX25L128 — 16 MB  (Flash NOR)</item>
     </string-array>
 
-    <!-- Connection / state strings -->
+    <!-- Controles principales de conexión -->
     <string name="connect">Conectar</string>
     <string name="disconnect">Desconectar</string>
     <string name="status_disconnected">Desconectado</string>
     <string name="status_connected">Conectado: 9600 bps</string>
+    <string name="status_connect_usb">Conecte el dispositivo USB para comenzar</string>
+
+    <!-- Configuración y acciones -->
+    <string name="protocol_label">Protocolo</string>
+    <string name="model_capacity_label">Modelo / Capacidad</string>
     <string name="read_eeprom">Leer memoria</string>
     <string name="write_eeprom">Escribir memoria</string>
     <string name="erase_eeprom">Borrar memoria</string>
     <string name="verify_eeprom">Verificar</string>
-    <string name="clear_log">Limpiar Log</string>
+    <string name="scan_label">Escanear</string>
+    <string name="full_dump_label">Full Dump</string>
     <string name="save_eeprom">Exportar .bin / .hex</string>
-    <string name="connection_instructions">Instrucciones de conexión</string>
+    <string name="clear_log">Limpiar Log</string>
+    <string name="operations_log">Log de Operaciones</string>
+    <string name="app_ready">&gt; Aplicación lista.\n</string>
 
-    <!-- Menu items -->
+    <!-- Publicidad AdMob -->
+    <string name="ad_badge">Ad</string>
+    <string name="ad_icon_desc">Icono de anuncio</string>
+
+    <!-- Visor de memoria (Popup Hex) -->
+    <string name="hex_viewer_title">Visor de Memoria</string>
+    <string name="btn_close">Cerrar</string>
+    <string name="loading_data">Cargando datos...</string>
+    <string name="starting_transfer">Iniciando transferencia...</string>
+
+    <!-- Elementos del menú -->
     <string name="menu_about">Acerca de</string>
     <string name="menu_pinout_pic">Pinout PIC 16F628A</string>
     <string name="menu_i2c_conn">Diagrama I2C</string>
@@ -82,31 +84,80 @@
     <string name="menu_firmware">Firmware (descargar)</string>
     <string name="menu_privacy">Política de privacidad</string>
 
-    <!-- About strings -->
+    <!-- Títulos de diagramas de hardware -->
+    <string name="title_diagram_i2c">Diagrama I2C — 24Cxx</string>
+    <string name="title_diagram_spi">Diagrama SPI — W25Qxx / 25LCxx</string>
+    <string name="title_diagram_pinout">PIC16F628A — Pinout DIP-18</string>
+
+    <!-- Acerca de -->
     <string name="about_title">Acerca de OTG Flash EEPROM</string>
     <string name="about_version">Versión 1.2.0</string>
-    <string name="about_description">
-        Programador universal de memorias EEPROM I2C y Flash SPI
-        mediante un PIC16F628A como puente USB-Serial.
-    </string>
-    <string name="about_license_title">Licencia</string>
+    <string name="about_description">Programador universal de memorias EEPROM I2C y Flash SPI mediante un PIC16F628A como puente USB-Serial.</string>
+    <string name="about_license_title">📄  Licencia</string>
     <string name="about_license_text">Apache License 2.0</string>
     <string name="about_license_url">https://www.apache.org/licenses/LICENSE-2.0</string>
+    <string name="about_repo_title">🔗  Repositorio oficial (GitHub)</string>
     <string name="about_repo_url">https://github.com/Danielk10/Comunicador-OTG-TTL-Android</string>
+    <string name="about_btn_open_browser">Abrir en navegador</string>
+    <string name="about_libs_title">📦  Bibliotecas y dependencias</string>
+    <string name="about_dev_title">👤  Desarrollador</string>
     <string name="about_dev_name">Daniel Diamon</string>
     <string name="about_dev_email">danielpdiamon@gmail.com</string>
+    <string name="about_send_email">Enviar email</string>
+    <string name="about_btn_privacy">🔒  Política de Privacidad</string>
 
-    <!-- Firmware activity strings -->
+    <!-- Pantalla de Firmware -->
     <string name="firmware_title">Firmware PIC16F628A</string>
     <string name="firmware_desc">PICMEM v3 — Compilado con SDCC\nOscilador INTRC 4 MHz · UART 9600 baud</string>
-    <string name="firmware_download_c">Guardar código fuente (.c)</string>
-    <string name="firmware_download_hex">Guardar firmware compilado (.hex)</string>
-    <string name="firmware_open_repo">Ver repositorio en GitHub</string>
-    <string name="firmware_compile_cmd">sdcc --std-c99 -mpic14 -p16f628a --use-non-free pic_firmware_v3.c</string>
+    <string name="firmware_compile_title">Comando de compilación</string>
+    <string name="firmware_save_dir_title">💾  Guardar archivos en Descargas/rom/</string>
+    <string name="firmware_download_c">📄  Guardar código fuente  (.c)</string>
+    <string name="firmware_download_hex">⚙  Guardar firmware compilado  (.hex)</string>
+    <string name="firmware_open_repo">Abrir en GitHub</string>
+    <string name="firmware_repo_header">⬡  Repositorio GitHub</string>
+    <string name="firmware_repo_desc">Código fuente completo de la app Android, firmware PIC, documentación del protocolo y esquemas de hardware.</string>
+    <string name="firmware_supported_chips_title">📋  Chips soportados</string>
+    <string name="firmware_compile_cmd">sdcc --std-c99 -mpic14 -p16f628a\n     --use-non-free pic_firmware_v3.c</string>
+    <string name="firmware_compiler_note">También disponible la app C PIC Compiler en Play Store para compilar directamente desde Android.</string>
     <string name="firmware_saved_ok">Guardado en Descargas/rom/</string>
     <string name="firmware_save_error">Error al guardar el archivo</string>
 
-    <!-- Privacy policy -->
+    <!-- Política de privacidad -->
     <string name="privacy_title">Política de Privacidad</string>
     <string name="privacy_url">https://todoandroid.42web.io/politica-de-privacidad.html</string>
+
+    <!-- Mensajes Toast y Notificaciones -->
+    <string name="toast_timeout">Timeout — sin respuesta del PIC</string>
+    <string name="toast_connect_first">Conecte el dispositivo primero</string>
+    <string name="toast_read_complete">Lectura completada</string>
+    <string name="toast_file_exceeds_capacity">El archivo excede la capacidad</string>
+    <string name="toast_write_complete">Escritura completada</string>
+    <string name="toast_erase_complete">Borrado completado</string>
+    <string name="toast_need_data_and_file">Se necesitan datos leídos y archivo cargado</string>
+    <string name="toast_verify_success">Verificación exitosa</string>
+    <string name="toast_verify_differences">%d diferencias encontradas</string>
+    <string name="toast_no_data_to_save">No hay datos para guardar</string>
+    <string name="toast_exporting">Exportando...</string>
+    <string name="toast_saved_to_downloads">Guardado en Descargas/rom/</string>
+    <string name="toast_picmem_detected">PICMEM Detectado</string>
+    <string name="toast_error_reading">Error leyendo en 0x%s</string>
+    <string name="toast_error_erasing">Error al borrar</string>
+    <string name="toast_serial_error">Error de comunicación serial</string>
+    <string name="toast_disconnected">Desconectado</string>
+    <string name="toast_error_prefix">Error: </string>
+    <string name="toast_cannot_open_url">No se pudo abrir: %s</string>
+    <string name="about_version_format">Versión %1$s  (build %2$d)</string>
+    <string name="popup_reading">Leyendo memoria...</string>
+    <string name="popup_writing">Escribiendo memoria...</string>
+    <string name="popup_erasing_i2c">Borrando I2C (0xFF)...</string>
+    <string name="popup_erasing_spi">Borrando chip SPI...</string>
+    <string name="popup_dumping_i2c">Volcado completo I2C...</string>
+    <string name="popup_dumping_spi">Volcado completo SPI (%d KB)...</string>
+    <string name="instructions_i2c">I2C (24Cxx): SDA→Pin 17, SCL→Pin 18 (Pull-up 4.7kΩ obligatorios)</string>
+    <string name="instructions_spi">SPI (25Cxx/W25Qxx): CS→Pin 1, SCK→Pin 2, MISO→Pin 4, MOSI→Pin 15</string>
+    <string name="firmware_not_in_assets">✗ No encontrado en assets: %s\n  Descarga desde GitHub el archivo completo.</string>
+    <string name="firmware_saved_path">✓ Guardado: %s</string>
+    <string name="hex_viewer_header">Dirección | 00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F | ASCII\n</string>
+    <string name="hex_viewer_truncated_final">[ Mostrando últimos %1$d B de %2$d B totales — usa Exportar para el archivo completo ]\n\n</string>
+    <string name="hex_viewer_truncated_streaming">[ ... %1$d B — mostrando últimos %2$d B ]\n\n</string>
 </resources>

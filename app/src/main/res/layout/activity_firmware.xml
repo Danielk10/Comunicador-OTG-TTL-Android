@@ -22,7 +22,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="🔧  Firmware PIC16F628A"
+                android:text="@string/firmware_title"
                 android:textColor="#58A6FF"
                 android:textSize="20sp"
                 android:textStyle="bold" />
@@ -32,7 +32,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="6dp"
                 android:gravity="center"
-                android:text="PICMEM v3  ·  INTRC 4 MHz  ·  UART 9600 baud\nCompilador: SDCC"
+                android:text="@string/firmware_desc"
                 android:textColor="#8B949E"
                 android:textSize="12sp" />
         </LinearLayout>
@@ -56,7 +56,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Comando de compilación"
+                    android:text="@string/firmware_compile_title"
                     android:textColor="#58A6FF"
                     android:textSize="12sp"
                     android:textStyle="bold"
@@ -67,7 +67,7 @@
                     android:layout_height="wrap_content"
                     android:background="#161B22"
                     android:padding="10dp"
-                    android:text="sdcc --std-c99 -mpic14 -p16f628a\n     --use-non-free pic_firmware_v3.c"
+                    android:text="@string/firmware_compile_cmd"
                     android:textColor="#39D353"
                     android:textSize="12sp"
                     android:fontFamily="monospace" />
@@ -76,7 +76,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
-                    android:text="También disponible la app C PIC Compiler en Play Store\npara compilar directamente desde Android."
+                    android:text="@string/firmware_compiler_note"
                     android:textColor="#CDD9E5"
                     android:textSize="11sp" />
             </LinearLayout>
@@ -101,7 +101,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="💾  Guardar archivos en Descargas/rom/"
+                    android:text="@string/firmware_save_dir_title"
                     android:textColor="#58A6FF"
                     android:textSize="13sp"
                     android:textStyle="bold"
@@ -112,7 +112,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginBottom="10dp"
-                    android:text="📄  Guardar código fuente  (.c)"
+                    android:text="@string/firmware_download_c"
                     android:textAllCaps="false"
                     app:backgroundTint="#1F6FEB"
                     app:cornerRadius="8dp" />
@@ -121,7 +121,7 @@
                     android:id="@+id/btnDownloadHex"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="⚙  Guardar firmware compilado  (.hex)"
+                    android:text="@string/firmware_download_hex"
                     android:textAllCaps="false"
                     app:backgroundTint="#238636"
                     app:cornerRadius="8dp" />
@@ -157,7 +157,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="⬡  Repositorio GitHub"
+                    android:text="@string/firmware_repo_header"
                     android:textColor="#58A6FF"
                     android:textSize="13sp"
                     android:textStyle="bold"
@@ -167,7 +167,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginBottom="10dp"
-                    android:text="Código fuente completo de la app Android, firmware PIC,\ndocumentación del protocolo y esquemas de hardware."
+                    android:text="@string/firmware_repo_desc"
                     android:textColor="#CDD9E5"
                     android:textSize="12sp" />
 
@@ -176,7 +176,7 @@
                     style="@style/Widget.Material3.Button.TonalButton"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Abrir en GitHub"
+                    android:text="@string/firmware_open_repo"
                     android:textAllCaps="false"
                     app:cornerRadius="8dp" />
             </LinearLayout>
@@ -201,7 +201,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="📋  Chips soportados"
+                    android:text="@string/firmware_supported_chips_title"
                     android:textColor="#58A6FF"
                     android:textSize="13sp"
                     android:textStyle="bold"

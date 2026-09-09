@@ -15,7 +15,7 @@
         android:minHeight="46dp"
         android:background="@color/bg_header"
         android:elevation="3dp"
-        app:title="OTG Flash EEPROM"
+        app:title="@string/app_name"
         app:titleTextColor="@color/text_primary"
         app:titleTextAppearance="@style/TextAppearance.Material3.TitleSmall"
         app:titleCentered="true" />
@@ -127,7 +127,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Protocolo"
+                        android:text="@string/protocol_label"
                         android:textColor="@color/text_secondary"
                         android:textSize="10sp"
                         android:textStyle="bold" />
@@ -155,7 +155,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Modelo / Capacidad"
+                        android:text="@string/model_capacity_label"
                         android:textColor="@color/text_secondary"
                         android:textSize="10sp"
                         android:textStyle="bold" />
@@ -275,7 +275,7 @@
                         android:insetBottom="0dp"
                         android:paddingHorizontal="2dp"
                         android:paddingVertical="0dp"
-                        android:text="Escanear"
+                        android:text="@string/scan_label"
                         android:textSize="11sp"
                         android:enabled="false" />
 
@@ -291,7 +291,7 @@
                         android:insetBottom="0dp"
                         android:paddingHorizontal="2dp"
                         android:paddingVertical="0dp"
-                        android:text="Full Dump"
+                        android:text="@string/full_dump_label"
                         android:textSize="11sp"
                         android:enabled="false" />
 
@@ -322,7 +322,7 @@
             android:layout_height="wrap_content"
             android:layout_marginHorizontal="4dp"
             android:layout_marginBottom="4dp"
-            android:text="Conecte el dispositivo USB para comenzar"
+            android:text="@string/status_connect_usb"
             android:textColor="@color/text_secondary"
             android:textSize="10sp"
             android:maxLines="1"
@@ -358,7 +358,7 @@
                         android:layout_width="36dp"
                         android:layout_height="36dp"
                         android:layout_marginEnd="6dp"
-                        android:contentDescription="Icono de anuncio"
+                        android:contentDescription="@string/ad_icon_desc"
                         android:scaleType="fitCenter" />
 
                     <!-- Textos e insignias -->
@@ -378,7 +378,7 @@
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="Ad"
+                                android:text="@string/ad_badge"
                                 android:textSize="9sp"
                                 android:textStyle="bold"
                                 android:textColor="#FFFFFF"
@@ -467,7 +467,7 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="Log de Operaciones"
+                        android:text="@string/operations_log"
                         android:textColor="@color/text_secondary"
                         android:textSize="11sp"
                         android:textStyle="bold" />
@@ -497,7 +497,7 @@
                         android:id="@+id/tvLog"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="> Aplicación lista.\n"
+                        android:text="@string/app_ready"
                         android:textColor="#8B949E"
                         android:textSize="11sp"
                         android:typeface="monospace" />

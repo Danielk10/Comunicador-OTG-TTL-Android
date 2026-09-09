@@ -156,7 +156,7 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
                 log("⚠ Timeout sin respuesta (estado: " + state + ").");
                 if (state == ProtocolState.FULL_DUMPING)
                     log("  SPI: verifica que el modelo coincida con el chip real.");
-                Toast.makeText(this, "Timeout — sin respuesta del PIC", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, R.string.toast_timeout, Toast.LENGTH_SHORT).show();
                 state = ProtocolState.IDLE;
                 pendingFullDump = false;
                 updateUIState(serialManager.isConnected());
@@ -206,7 +206,7 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
         spinnerProtocol.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override public void onItemSelected(AdapterView<?> p, View v, int pos, long id) {
                 updateModelSpinner(pos);
-                tvInstructions.setText(getActiveProtocol().getHardwareInstructions());
+                tvInstructions.setText(pos == 0 ? R.string.instructions_i2c : R.string.instructions_spi);
             }
             @Override public void onNothingSelected(AdapterView<?> p) {}
         });
@@ -253,7 +253,7 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
 
     private void startRead() {
         if (!serialManager.isConnected()) {
-            Toast.makeText(this, "Conecte el dispositivo primero", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, R.string.toast_connect_first, Toast.LENGTH_SHORT).show();
             return;
         }
         cacheProtocol();
@@ -263,7 +263,7 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
         state          = ProtocolState.READING;
 
         log("Leyendo " + totalSize + " bytes [" + spinnerModel.getSelectedItem() + "]...");
-        hexHelper.showPopup("Leyendo memoria...", totalSize);
+        hexHelper.showPopup(getString(R.string.popup_reading), totalSize);
         updateUIState(true);
         requestNextReadChunk();
     }
@@ -284,7 +284,7 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
             cancelTimeout();
             eepromBuffer = readStream.toByteArray();
             log("✓ Lectura completada: " + eepromBuffer.length + " bytes.");
-            Toast.makeText(this, "Lectura completada", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, R.string.toast_read_complete, Toast.LENGTH_SHORT).show();
             updateUIState(true);
             hexHelper.renderFinal(eepromBuffer);
             hexHelper.updateProgress(eepromBuffer.length);
@@ -339,7 +339,7 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
 
             if (writeDataBuffer.length > memSize) {
                 log("Error: archivo (" + writeDataBuffer.length + " B) > memoria (" + memSize + " B).");
-                Toast.makeText(this, "Archivo excede la capacidad", Toast.LENGTH_LONG).show();
+                Toast.makeText(this, R.string.toast_file_exceeds_capacity, Toast.LENGTH_LONG).show();
                 return;
             }
 
@@ -347,13 +347,13 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
             state = ProtocolState.WRITING;
             currentAddress = 0;
             log("Escribiendo " + totalSize + " bytes...");
-            hexHelper.showPopup("Escribiendo memoria...", totalSize);
+            hexHelper.showPopup(getString(R.string.popup_writing), totalSize);
             updateUIState(true);
             sendNextWriteChunk();
 
         } catch (Exception e) {
             Log.e(TAG, "prepareWriteData", e);
-            Toast.makeText(this, "Error: " + e.getMessage(), Toast.LENGTH_LONG).show();
+            Toast.makeText(this, getString(R.string.toast_error_prefix) + e.getMessage(), Toast.LENGTH_LONG).show();
         }
     }
 
@@ -379,7 +379,7 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
             state = ProtocolState.IDLE;
             cancelTimeout();
             log("✓ Escritura completada: " + writeDataBuffer.length + " bytes.");
-            Toast.makeText(this, "Escritura completada", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, R.string.toast_write_complete, Toast.LENGTH_SHORT).show();
             updateUIState(true);
             hexHelper.updateProgress(writeDataBuffer.length);
             hexHelper.renderFinal(writeDataBuffer);
@@ -401,14 +401,14 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
             writeDataBuffer = new byte[sz];
             java.util.Arrays.fill(writeDataBuffer, (byte) 0xFF);
             totalSize = sz; state = ProtocolState.WRITING; currentAddress = 0;
-            hexHelper.showPopup("Borrando I2C (0xFF)...", sz);
+            hexHelper.showPopup(getString(R.string.popup_erasing_i2c), sz);
             updateUIState(true);
             sendNextWriteChunk();
         } else {
             log("Chip Erase SPI (puede tardar varios minutos)...");
             state = ProtocolState.ERASING;
             serialManager.sendData(cmd);
-            hexHelper.showPopup("Borrando chip SPI...", 1);
+            hexHelper.showPopup(getString(R.string.popup_erasing_spi), 1);
             updateUIState(true);
             resetTimeout(300000);
         }
@@ -419,7 +419,7 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
             state = ProtocolState.IDLE;
             cancelTimeout();
             log("✓ Borrado completado.");
-            Toast.makeText(this, "Borrado completado", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, R.string.toast_erase_complete, Toast.LENGTH_SHORT).show();
             updateUIState(serialManager.isConnected());
             hexHelper.dismiss();
         });
@@ -431,7 +431,7 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
 
     private void startVerify() {
         if (eepromBuffer == null || writeDataBuffer == null) {
-            Toast.makeText(this, "Se necesitan datos leídos y archivo cargado", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, R.string.toast_need_data_and_file, Toast.LENGTH_SHORT).show();
             return;
         }
         log("Verificando datos...");
@@ -446,10 +446,10 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
         }
         if (errors == 0) {
             log("✓ VERIFICACIÓN OK: datos coinciden perfectamente.");
-            Toast.makeText(this, "Verificación exitosa", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, R.string.toast_verify_success, Toast.LENGTH_SHORT).show();
         } else {
             log("✗ " + errors + " diferencias encontradas.");
-            Toast.makeText(this, errors + " diferencias", Toast.LENGTH_LONG).show();
+            Toast.makeText(this, getString(R.string.toast_verify_differences, errors), Toast.LENGTH_LONG).show();
         }
     }
 
@@ -487,7 +487,7 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
             state = ProtocolState.READING;
 
             log("Volcado I2C (" + sz + " B en bloques de " + READ_CHUNK + " B)...");
-            hexHelper.showPopup("Volcado completo I2C...", sz);
+            hexHelper.showPopup(getString(R.string.popup_dumping_i2c), sz);
             updateUIState(true);
             requestNextReadChunk();
 
@@ -525,7 +525,7 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
         pendingFullDump = false;
 
         mainHandler.post(() -> {
-            hexHelper.showPopup("Volcado completo SPI (" + sizeKB + " KB)...", totalSize);
+            hexHelper.showPopup(getString(R.string.popup_dumping_spi, sizeKB), totalSize);
             serialManager.sendData(new byte[]{0x50, 0x46});
             resetTimeout(20000);
         });
@@ -541,24 +541,24 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
 
     private void saveBuffer() {
         if (eepromBuffer == null || eepromBuffer.length == 0) {
-            Toast.makeText(this, "No hay datos para guardar", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, R.string.toast_no_data_to_save, Toast.LENGTH_SHORT).show();
             return;
         }
         // Copiar referencia para el hilo background
         final byte[] dataCopy = eepromBuffer;
         log("Exportando " + dataCopy.length + " bytes (.bin + .hex)...");
-        Toast.makeText(this, "Exportando...", Toast.LENGTH_SHORT).show();
+        Toast.makeText(this, R.string.toast_exporting, Toast.LENGTH_SHORT).show();
 
         bgExecutor.execute(() -> {
             try {
                 File dir = FileManager.saveMemoryDump(dataCopy);
                 mainHandler.post(() -> {
                     log("✓ Guardado en " + dir.getAbsolutePath());
-                    Toast.makeText(this, "Guardado en Descargas/rom/", Toast.LENGTH_LONG).show();
+                    Toast.makeText(this, R.string.toast_saved_to_downloads, Toast.LENGTH_LONG).show();
                 });
             } catch (IllegalArgumentException e) {
                 mainHandler.post(() ->
-                        Toast.makeText(this, "No hay datos para guardar", Toast.LENGTH_SHORT).show());
+                        Toast.makeText(this, R.string.toast_no_data_to_save, Toast.LENGTH_SHORT).show());
             } catch (java.io.IOException e) {
                 final String msg = e.getMessage();
                 mainHandler.post(() -> log("Error I/O guardando: " + msg));
@@ -641,7 +641,7 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
     @Override
     public void onSerialConnectError(Exception e) {
         log("Error de conexión: " + e.getMessage());
-        runOnUiThread(() -> Toast.makeText(this, "Error: " + e.getMessage(), Toast.LENGTH_LONG).show());
+        runOnUiThread(() -> Toast.makeText(this, getString(R.string.toast_error_prefix) + e.getMessage(), Toast.LENGTH_LONG).show());
         updateUIState(false);
     }
 
@@ -660,7 +660,7 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
                     cancelTimeout();
                     log("✓ Firmware: " + s.replace("\r", "").replace("\n", " ").trim());
                     runOnUiThread(() ->
-                            Toast.makeText(this, "PICMEM Detectado", Toast.LENGTH_SHORT).show());
+                            Toast.makeText(this, R.string.toast_picmem_detected, Toast.LENGTH_SHORT).show());
                     updateUIState(true);
                 }
                 break;
@@ -682,8 +682,8 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
                         log("✗ RESP_ERR en 0x" + Integer.toHexString(addr)
                                 + ". Verifica chip y conexiones.");
                         runOnUiThread(() -> {
-                            Toast.makeText(this, "Error leyendo en 0x"
-                                    + Integer.toHexString(addr), Toast.LENGTH_SHORT).show();
+                            Toast.makeText(this, getString(R.string.toast_error_reading,
+                                    Integer.toHexString(addr)), Toast.LENGTH_SHORT).show();
                             updateUIState(true);
                             hexHelper.dismiss();
                         });
@@ -758,7 +758,7 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
                         cancelTimeout();
                         log("✗ Error Chip Erase (RESP_ERR).");
                         runOnUiThread(() -> {
-                            Toast.makeText(this, "Error al borrar", Toast.LENGTH_SHORT).show();
+                            Toast.makeText(this, R.string.toast_error_erasing, Toast.LENGTH_SHORT).show();
                             updateUIState(true);
                             hexHelper.dismiss();
                         });
@@ -948,7 +948,7 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
         cancelTimeout();
         log("Error I/O serial: " + e.getMessage());
         runOnUiThread(() -> {
-            Toast.makeText(this, "Error de comunicación serial", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, R.string.toast_serial_error, Toast.LENGTH_SHORT).show();
             updateUIState(false);
             hexHelper.dismiss();
         });
@@ -961,7 +961,7 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
         cancelTimeout();
         log("Dispositivo desconectado.");
         runOnUiThread(() -> {
-            Toast.makeText(this, "Desconectado", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, R.string.toast_disconnected, Toast.LENGTH_SHORT).show();
             updateUIState(false);
             hexHelper.dismiss();
         });

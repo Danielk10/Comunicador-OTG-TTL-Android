@@ -59,7 +59,7 @@ public class HexViewerHelper {
             tvTitle.setText(title);
             progressBar.setMax(maxProgress);
             progressBar.setProgress(0);
-            tvHexViewer.setText("Iniciando transferencia...");
+            tvHexViewer.setText(activity.getString(R.string.starting_transfer));
 
             popupView.findViewById(R.id.btnClosePopup)
                     .setOnClickListener(v -> popupWindow.dismiss());
@@ -110,8 +110,7 @@ public class HexViewerHelper {
             if (tvHexViewer == null) return;
             StringBuilder sb = new StringBuilder();
             if (truncated) {
-                sb.append(String.format(
-                        "[ Mostrando últimos %d B de %d B totales — usa Exportar para el archivo completo ]\n\n",
+                sb.append(activity.getString(R.string.hex_viewer_truncated_final,
                         MAX_RENDER_BYTES, data.length));
             }
             appendHexDump(sb, window, offset);
@@ -135,7 +134,7 @@ public class HexViewerHelper {
             if (tvHexViewer == null) return;
             StringBuilder sb = new StringBuilder();
             if (truncated) {
-                sb.append(String.format("[ ... %d B — mostrando últimos %d B ]\n\n",
+                sb.append(activity.getString(R.string.hex_viewer_truncated_streaming,
                         data.length, MAX_RENDER_BYTES));
             }
             appendHexDump(sb, window, offset);
@@ -148,7 +147,7 @@ public class HexViewerHelper {
     // (baseOffset indica la dirección real del primer byte de la ventana).
     // ─────────────────────────────────────────────────────────────────────────
     private void appendHexDump(StringBuilder sb, byte[] data, int baseOffset) {
-        sb.append("Direccion | 00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F | ASCII\n");
+        sb.append(activity.getString(R.string.hex_viewer_header));
         sb.append("------------------------------------------------------------------\n");
 
         final char[] H = "0123456789ABCDEF".toCharArray();

@@ -5,6 +5,8 @@ import android.view.MenuItem;
 import android.widget.ScrollView;
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.mobincube.keystore.jks_parley_copy.sc_55UCEB.R;
+
 public class HardwareInfoActivity extends AppCompatActivity {
 
     @Override
@@ -28,9 +30,9 @@ public class HardwareInfoActivity extends AppCompatActivity {
             getSupportActionBar().setDisplayHomeAsUpEnabled(true);
             String title;
             switch (type) {
-                case 1:  title = "Diagrama I2C — 24Cxx";  break;
-                case 2:  title = "Diagrama SPI — W25Qxx / 25LCxx"; break;
-                default: title = "PIC16F628A — Pinout DIP-18";     break;
+                case 1:  title = getString(R.string.title_diagram_i2c);  break;
+                case 2:  title = getString(R.string.title_diagram_spi); break;
+                default: title = getString(R.string.title_diagram_pinout);     break;
             }
             getSupportActionBar().setTitle(title);
         }

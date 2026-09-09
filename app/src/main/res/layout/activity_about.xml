@@ -23,13 +23,13 @@
                 android:layout_width="72dp"
                 android:layout_height="72dp"
                 android:src="@mipmap/ic_launcher_round"
-                android:contentDescription="App icon" />
+                android:contentDescription="@string/app_name" />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="12dp"
-                android:text="OTG Flash EEPROM"
+                android:text="@string/app_name"
                 android:textColor="#E6EDF3"
                 android:textSize="22sp"
                 android:textStyle="bold" />
@@ -48,7 +48,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
                 android:gravity="center"
-                android:text="Programador universal de memorias EEPROM I2C y Flash SPI\nmediante un PIC16F628A como puente USB-Serial."
+                android:text="@string/about_description"
                 android:textColor="#CDD9E5"
                 android:textSize="13sp" />
         </LinearLayout>
@@ -79,7 +79,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="📄  Licencia"
+                    android:text="@string/about_license_title"
                     android:textColor="#58A6FF"
                     android:textSize="13sp"
                     android:textStyle="bold"
@@ -88,7 +88,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Apache License 2.0"
+                    android:text="@string/about_license_text"
                     android:textColor="#CDD9E5"
                     android:textSize="13sp" />
 
@@ -97,7 +97,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="4dp"
-                    android:text="https://www.apache.org/licenses/LICENSE-2.0"
+                    android:text="@string/about_license_url"
                     android:textColor="#58A6FF"
                     android:textSize="12sp"
                     android:autoLink="web" />
@@ -123,7 +123,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="🔗  Repositorio oficial (GitHub)"
+                    android:text="@string/about_repo_title"
                     android:textColor="#58A6FF"
                     android:textSize="13sp"
                     android:textStyle="bold"
@@ -133,7 +133,7 @@
                     android:id="@+id/tvRepoLink"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="github.com/Danielk10/Comunicador-OTG-TTL-Android"
+                    android:text="@string/about_repo_url"
                     android:textColor="#58A6FF"
                     android:textSize="12sp" />
 
@@ -143,7 +143,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
-                    android:text="Abrir en navegador"
+                    android:text="@string/about_btn_open_browser"
                     app:cornerRadius="8dp" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
@@ -167,7 +167,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="📦  Bibliotecas y dependencias"
+                    android:text="@string/about_libs_title"
                     android:textColor="#58A6FF"
                     android:textSize="13sp"
                     android:textStyle="bold"
@@ -177,7 +177,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="usb-serial-for-android  v3.10.0"
+                    android:text="usb-serial-for-android  v3.11.0"
                     android:textColor="#E6EDF3"
                     android:textSize="13sp"
                     android:textStyle="bold" />
@@ -219,6 +219,28 @@
                     android:textColor="#58A6FF"
                     android:textSize="11sp" />
 
+                <!-- Google Play Services Ads -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Google Mobile Ads SDK (AdMob)"
+                    android:textColor="#E6EDF3"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Autor: Google   ·   Play Services Ads v25.3.0"
+                    android:textColor="#8B949E"
+                    android:textSize="11sp" />
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="12dp"
+                    android:text="developers.google.com/admob"
+                    android:textColor="#58A6FF"
+                    android:textSize="11sp" />
+
                 <!-- SDCC -->
                 <TextView
                     android:layout_width="wrap_content"
@@ -230,7 +252,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Licencia: GPL   ·   Usado para compilar el firmware PIC"
+                    android:text="Licencia: GPL   ·   Compilador firmware PIC"
                     android:textColor="#8B949E"
                     android:textSize="11sp" />
                 <TextView
@@ -262,7 +284,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="👤  Desarrollador"
+                    android:text="@string/about_dev_title"
                     android:textColor="#58A6FF"
                     android:textSize="13sp"
                     android:textStyle="bold"
@@ -271,7 +293,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Daniel Diamon"
+                    android:text="@string/about_dev_name"
                     android:textColor="#E6EDF3"
                     android:textSize="14sp"
                     android:textStyle="bold" />
@@ -303,7 +325,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="24dp"
-            android:text="🔒  Política de Privacidad"
+            android:text="@string/about_btn_privacy"
             app:cornerRadius="10dp" />
 
     </LinearLayout>

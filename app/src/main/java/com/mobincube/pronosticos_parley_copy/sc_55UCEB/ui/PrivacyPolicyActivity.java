@@ -11,6 +11,8 @@ import android.widget.RelativeLayout;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.mobincube.keystore.jks_parley_copy.sc_55UCEB.R;
+
 /**
  * Muestra la política de privacidad de la aplicación en un WebView.
  * URL: https://todoandroid.42web.io/politica-de-privacidad.html
@@ -79,7 +81,7 @@ public class PrivacyPolicyActivity extends AppCompatActivity {
         // ── ActionBar ──────────────────────────────────────────────────
         if (getSupportActionBar() != null) {
             getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-            getSupportActionBar().setTitle("Política de Privacidad");
+            getSupportActionBar().setTitle(R.string.privacy_title);
         }
     }
 

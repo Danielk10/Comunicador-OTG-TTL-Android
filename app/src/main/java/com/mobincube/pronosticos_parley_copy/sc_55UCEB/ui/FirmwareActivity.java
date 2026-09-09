@@ -46,7 +46,7 @@ public class FirmwareActivity extends AppCompatActivity {
 
         if (getSupportActionBar() != null) {
             getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-            getSupportActionBar().setTitle("Firmware PIC16F628A");
+            getSupportActionBar().setTitle(R.string.firmware_title);
         }
 
         tvStatus = findViewById(R.id.tvDownloadStatus);
@@ -79,12 +79,11 @@ public class FirmwareActivity extends AppCompatActivity {
                 while ((n = in.read(buf)) != -1) out.write(buf, 0, n);
             }
 
-            showStatus("✓ Guardado: " + destFile.getAbsolutePath(), true);
+            showStatus(getString(R.string.firmware_saved_path, destFile.getAbsolutePath()), true);
 
         } catch (IOException e) {
             // El archivo puede no existir en assets del APK de prueba
-            showStatus("✗ No encontrado en assets: " + assetName
-                    + "\n  Descarga desde GitHub el archivo completo.", false);
+            showStatus(getString(R.string.firmware_not_in_assets, assetName), false);
         }
     }
 
@@ -106,7 +105,7 @@ public class FirmwareActivity extends AppCompatActivity {
         tvStatus.setTextColor(success ? 0xFF3FB950 : 0xFFF85149);
         tvStatus.setVisibility(View.VISIBLE);
         if (success) {
-            Toast.makeText(this, "Guardado en Descargas/rom/", Toast.LENGTH_LONG).show();
+            Toast.makeText(this, R.string.firmware_saved_ok, Toast.LENGTH_LONG).show();
         } else {
             Toast.makeText(this, msg.split("\n")[0], Toast.LENGTH_LONG).show();
         }
@@ -116,7 +115,7 @@ public class FirmwareActivity extends AppCompatActivity {
         try {
             startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(url)));
         } catch (Exception e) {
-            Toast.makeText(this, "No se pudo abrir: " + url, Toast.LENGTH_LONG).show();
+            Toast.makeText(this, getString(R.string.toast_cannot_open_url, url), Toast.LENGTH_LONG).show();
         }
     }
 
