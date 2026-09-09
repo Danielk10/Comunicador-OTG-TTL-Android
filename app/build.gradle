@@ -23,8 +23,8 @@ android {
         applicationId "com.mobincube.keystore.jks_parley_copy.sc_55UCEB"
         minSdk 23
         targetSdk 37
-        versionCode 5
-        versionName "1.1.0"
+        versionCode 6
+        versionName "1.2.0"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -71,6 +71,7 @@ dependencies {
     implementation libs.activity
     implementation libs.constraintlayout
     implementation(libs.usb.serial.for1.android)
+    implementation libs.play.services.ads
     testImplementation libs.junit
     androidTestImplementation libs.ext.junit
     androidTestImplementation libs.espresso.core

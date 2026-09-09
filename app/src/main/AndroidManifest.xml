@@ -34,6 +34,7 @@
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="com.google.android.gms.permission.AD_ID" />
 
     <!-- ── Aplicación ───────────────────────────────────────────────────── -->
     <application
@@ -46,6 +47,19 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.ComunicadorOTGTTLAndroid"
         android:usesCleartextTraffic="false">
+
+        <!-- ── Google AdMob ──────────────────────────────────────────────── -->
+        <meta-data
+            android:name="com.google.android.gms.ads.APPLICATION_ID"
+            android:value="ca-app-pub-5141499161332805~3902329337" />
+
+        <meta-data
+            android:name="com.google.android.gms.ads.flag.OPTIMIZE_INITIALIZATION"
+            android:value="true" />
+
+        <meta-data
+            android:name="com.google.android.gms.ads.flag.OPTIMIZE_AD_LOADING"
+            android:value="true" />
 
         <!-- ── MainActivity (punto de entrada) ──────────────────────────── -->
         <activity

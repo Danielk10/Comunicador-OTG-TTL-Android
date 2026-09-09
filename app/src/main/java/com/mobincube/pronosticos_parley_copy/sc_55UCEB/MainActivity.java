@@ -13,6 +13,7 @@ import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.ScrollView;
 import android.widget.Spinner;
 import android.widget.TextView;
@@ -20,6 +21,16 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+
+import com.google.android.gms.ads.AdListener;
+import com.google.android.gms.ads.AdLoader;
+import com.google.android.gms.ads.AdRequest;
+import com.google.android.gms.ads.AdView;
+import com.google.android.gms.ads.LoadAdError;
+import com.google.android.gms.ads.MobileAds;
+import com.google.android.gms.ads.nativead.NativeAd;
+import com.google.android.gms.ads.nativead.NativeAdOptions;
+import com.google.android.gms.ads.nativead.NativeAdView;
 
 import com.mobincube.keystore.jks_parley_copy.sc_55UCEB.eeprom.EepromProtocol;
 import com.mobincube.keystore.jks_parley_copy.sc_55UCEB.eeprom.I2cProtocol;
@@ -55,6 +66,12 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
     private Spinner  spinnerProtocol, spinnerModel;
     private TextView tvStatusLabel,   tvInstructions;
     private View     statusDot,        layoutStatus;
+
+    // ── Google AdMob ────────────────────────────────────────────────────────
+    private AdView       adViewBanner;
+    private View         nativeAdCard;
+    private NativeAdView nativeAdView;
+    private NativeAd     currentNativeAd;
 
     // ── Estado de la máquina ────────────────────────────────────────────────
     private volatile ProtocolState state = ProtocolState.IDLE;
@@ -146,6 +163,8 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
                 hexHelper.dismiss();
             }
         };
+
+        initAds();
     }
 
     // ── initViews ─────────────────────────────────────────────────────────
@@ -166,6 +185,10 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
         tvInstructions  = findViewById(R.id.tvInstructions);
         statusDot       = findViewById(R.id.statusDot);
         layoutStatus    = findViewById(R.id.layoutStatus);
+
+        adViewBanner    = findViewById(R.id.adViewBanner);
+        nativeAdCard    = findViewById(R.id.nativeAdCard);
+        nativeAdView    = findViewById(R.id.nativeAdView);
 
         TextView   tvLog   = findViewById(R.id.tvLog);
         ScrollView scroll  = findViewById(R.id.scrollLog);
@@ -1071,8 +1094,132 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
         });
     }
 
+    // =========================================================================
+    // PUBLICIDAD (GOOGLE ADMOB)
+    // =========================================================================
+
+    private void initAds() {
+        MobileAds.initialize(this, initializationStatus -> {});
+
+        // Cargar Banner Inferior
+        if (adViewBanner != null) {
+            AdRequest bannerRequest = new AdRequest.Builder().build();
+            adViewBanner.loadAd(bannerRequest);
+        }
+
+        // Cargar Anuncio Nativo
+        loadNativeAd();
+    }
+
+    private void loadNativeAd() {
+        if (nativeAdView == null || nativeAdCard == null) return;
+
+        AdLoader adLoader = new AdLoader.Builder(this, "ca-app-pub-5141499161332805/7975202632")
+                .forNativeAd(nativeAd -> {
+                    if (isDestroyed() || isFinishing()) {
+                        nativeAd.destroy();
+                        return;
+                    }
+                    if (currentNativeAd != null) {
+                        currentNativeAd.destroy();
+                    }
+                    currentNativeAd = nativeAd;
+                    populateNativeAdView(nativeAd, nativeAdView);
+                    nativeAdCard.setVisibility(View.VISIBLE);
+                })
+                .withAdListener(new AdListener() {
+                    @Override
+                    public void onAdFailedToLoad(@NonNull LoadAdError adError) {
+                        Log.d(TAG, "Native ad failed to load: " + adError.getMessage());
+                        nativeAdCard.setVisibility(View.GONE);
+                    }
+                })
+                .withNativeAdOptions(new NativeAdOptions.Builder().build())
+                .build();
+
+        adLoader.loadAd(new AdRequest.Builder().build());
+    }
+
+    private void populateNativeAdView(NativeAd nativeAd, NativeAdView adView) {
+        TextView headlineView = adView.findViewById(R.id.ad_headline);
+        TextView bodyView = adView.findViewById(R.id.ad_body);
+        Button ctaView = adView.findViewById(R.id.ad_call_to_action);
+        ImageView iconView = adView.findViewById(R.id.ad_app_icon);
+        TextView advertiserView = adView.findViewById(R.id.ad_advertiser);
+
+        adView.setHeadlineView(headlineView);
+        adView.setBodyView(bodyView);
+        adView.setCallToActionView(ctaView);
+        adView.setIconView(iconView);
+        adView.setAdvertiserView(advertiserView);
+
+        if (headlineView != null) {
+            headlineView.setText(nativeAd.getHeadline());
+        }
+
+        if (bodyView != null) {
+            if (nativeAd.getBody() == null) {
+                bodyView.setVisibility(View.GONE);
+            } else {
+                bodyView.setVisibility(View.VISIBLE);
+                bodyView.setText(nativeAd.getBody());
+            }
+        }
+
+        if (ctaView != null) {
+            if (nativeAd.getCallToAction() == null) {
+                ctaView.setVisibility(View.INVISIBLE);
+            } else {
+                ctaView.setVisibility(View.VISIBLE);
+                ctaView.setText(nativeAd.getCallToAction());
+            }
+        }
+
+        if (iconView != null) {
+            if (nativeAd.getIcon() == null || nativeAd.getIcon().getDrawable() == null) {
+                iconView.setVisibility(View.GONE);
+            } else {
+                iconView.setImageDrawable(nativeAd.getIcon().getDrawable());
+                iconView.setVisibility(View.VISIBLE);
+            }
+        }
+
+        if (advertiserView != null) {
+            if (nativeAd.getAdvertiser() == null) {
+                advertiserView.setVisibility(View.GONE);
+            } else {
+                advertiserView.setText(nativeAd.getAdvertiser());
+                advertiserView.setVisibility(View.VISIBLE);
+            }
+        }
+
+        adView.setNativeAd(nativeAd);
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (adViewBanner != null) {
+            adViewBanner.resume();
+        }
+    }
+
+    @Override
+    protected void onPause() {
+        if (adViewBanner != null) {
+            adViewBanner.pause();
+        }
+        super.onPause();
+    }
+
     @Override
     protected void onDestroy() {
+        if (adViewBanner != null) {
+            adViewBanner.destroy();
+        }
+        if (currentNativeAd != null) {
+            currentNativeAd.destroy();
+        }
         super.onDestroy();
         serialManager.cleanup();
         mainHandler.removeCallbacksAndMessages(null);

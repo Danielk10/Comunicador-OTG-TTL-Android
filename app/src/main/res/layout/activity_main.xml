@@ -7,342 +7,520 @@
     android:background="@color/bg_dark"
     android:orientation="vertical">
 
+    <!-- ── Toolbar ───────────────────────────────────────────────────────── -->
     <com.google.android.material.appbar.MaterialToolbar
         android:id="@+id/toolbar"
         android:layout_width="match_parent"
-        android:layout_height="?attr/actionBarSize"
+        android:layout_height="46dp"
+        android:minHeight="46dp"
         android:background="@color/bg_header"
-        android:elevation="4dp"
+        android:elevation="3dp"
         app:title="OTG Flash EEPROM"
         app:titleTextColor="@color/text_primary"
+        app:titleTextAppearance="@style/TextAppearance.Material3.TitleSmall"
         app:titleCentered="true" />
 
-    <androidx.core.widget.NestedScrollView
-        android:id="@+id/mainScrollView"
+    <!-- ── Contenedor principal sin scroll ──────────────────────────────── -->
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
-        android:fillViewport="true">
+        android:orientation="vertical"
+        android:paddingHorizontal="8dp"
+        android:paddingTop="6dp">
 
-        <LinearLayout
+        <!-- ── Estado de conexión (Compacto en una sola fila) ─────────────── -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/layoutStatus"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:padding="12dp">
+            android:layout_marginBottom="4dp"
+            app:cardBackgroundColor="@color/bg_card"
+            app:cardCornerRadius="8dp"
+            app:strokeWidth="1dp"
+            app:strokeColor="#30363D">
 
-            <!-- ── Estado de conexión ───────────────────────────────────── -->
-            <com.google.android.material.card.MaterialCardView
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="12dp"
-                app:cardBackgroundColor="@color/bg_card"
-                app:cardCornerRadius="12dp"
-                app:strokeWidth="1dp"
-                app:strokeColor="#30363D">
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:paddingHorizontal="10dp"
+                android:paddingVertical="6dp">
 
-                <LinearLayout
-                    android:id="@+id/layoutStatus"
-                    android:layout_width="match_parent"
+                <View
+                    android:id="@+id/statusDot"
+                    android:layout_width="10dp"
+                    android:layout_height="10dp"
+                    android:background="@color/status_disconnected" />
+
+                <TextView
+                    android:id="@+id/tvStatusLabel"
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:padding="16dp"
+                    android:layout_marginStart="8dp"
+                    android:layout_weight="1"
+                    android:text="@string/status_disconnected"
+                    android:textColor="@color/status_disconnected"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    android:singleLine="true"
+                    android:ellipsize="end" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnConnect"
+                    android:layout_width="wrap_content"
+                    android:layout_height="34dp"
+                    android:minHeight="34dp"
+                    android:paddingHorizontal="12dp"
+                    android:paddingVertical="0dp"
+                    android:insetTop="0dp"
+                    android:insetBottom="0dp"
+                    android:text="@string/connect"
+                    android:textSize="12sp"
+                    app:backgroundTint="@color/btn_connect"
+                    app:cornerRadius="6dp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnDisconnect"
+                    android:layout_width="wrap_content"
+                    android:layout_height="34dp"
+                    android:minHeight="34dp"
+                    android:layout_marginStart="6dp"
+                    android:paddingHorizontal="10dp"
+                    android:paddingVertical="0dp"
+                    android:insetTop="0dp"
+                    android:insetBottom="0dp"
+                    android:enabled="false"
+                    android:text="@string/disconnect"
+                    android:textSize="12sp"
+                    app:backgroundTint="@color/btn_disconnect"
+                    app:cornerRadius="6dp" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- ── Configuración (Protocolo y Modelo lado a lado) ─────────────── -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="4dp"
+            app:cardBackgroundColor="@color/bg_card"
+            app:cardCornerRadius="8dp"
+            app:strokeWidth="1dp"
+            app:strokeColor="#30363D">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:paddingHorizontal="10dp"
+                android:paddingVertical="4dp"
+                android:gravity="center_vertical">
+
+                <!-- Protocolo -->
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
                     android:orientation="vertical">
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:gravity="center_vertical"
-                        android:orientation="horizontal">
-
-                        <View
-                            android:id="@+id/statusDot"
-                            android:layout_width="12dp"
-                            android:layout_height="12dp"
-                            android:background="@color/status_disconnected" />
-
-                        <TextView
-                            android:id="@+id/tvStatusLabel"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_marginStart="12dp"
-                            android:layout_weight="1"
-                            android:text="@string/status_disconnected"
-                            android:textColor="@color/status_disconnected"
-                            android:textSize="16sp"
-                            android:textStyle="bold" />
-                    </LinearLayout>
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="16dp"
-                        android:orientation="horizontal">
-
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/btnConnect"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_marginEnd="6dp"
-                            android:layout_weight="1"
-                            android:text="@string/connect"
-                            app:backgroundTint="@color/btn_connect"
-                            app:cornerRadius="8dp" />
-
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/btnDisconnect"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_marginStart="6dp"
-                            android:layout_weight="1"
-                            android:enabled="false"
-                            android:text="@string/disconnect"
-                            app:backgroundTint="@color/btn_disconnect"
-                            app:cornerRadius="8dp" />
-                    </LinearLayout>
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
-
-            <!-- ── Configuración ────────────────────────────────────────── -->
-            <com.google.android.material.card.MaterialCardView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="12dp"
-                app:cardBackgroundColor="@color/bg_card"
-                app:cardCornerRadius="12dp"
-                app:strokeWidth="1dp"
-                app:strokeColor="#30363D">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="16dp">
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Configuración"
+                        android:text="Protocolo"
                         android:textColor="@color/text_secondary"
-                        android:textSize="14sp"
+                        android:textSize="10sp"
                         android:textStyle="bold" />
 
-                    <LinearLayout
+                    <Spinner
+                        android:id="@+id/spinnerProtocol"
                         android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="12dp"
-                        android:orientation="horizontal"
-                        android:gravity="center_vertical">
-
-                        <TextView
-                            android:layout_width="90dp"
-                            android:layout_height="wrap_content"
-                            android:text="Protocolo:"
-                            android:textColor="@color/text_primary" />
-
-                        <Spinner
-                            android:id="@+id/spinnerProtocol"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:backgroundTint="@color/text_secondary" />
-                    </LinearLayout>
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="8dp"
-                        android:orientation="horizontal"
-                        android:gravity="center_vertical">
-
-                        <TextView
-                            android:layout_width="90dp"
-                            android:layout_height="wrap_content"
-                            android:text="Modelo:"
-                            android:textColor="@color/text_primary" />
-
-                        <Spinner
-                            android:id="@+id/spinnerModel"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:backgroundTint="@color/text_secondary" />
-                    </LinearLayout>
+                        android:layout_height="30dp"
+                        android:backgroundTint="@color/text_secondary" />
                 </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
 
-            <!-- ── Acciones ─────────────────────────────────────────────── -->
-            <com.google.android.material.card.MaterialCardView
+                <View
+                    android:layout_width="1dp"
+                    android:layout_height="26dp"
+                    android:background="#30363D"
+                    android:layout_marginHorizontal="6dp" />
+
+                <!-- Modelo -->
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1.3"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Modelo / Capacidad"
+                        android:textColor="@color/text_secondary"
+                        android:textSize="10sp"
+                        android:textStyle="bold" />
+
+                    <Spinner
+                        android:id="@+id/spinnerModel"
+                        android:layout_width="match_parent"
+                        android:layout_height="30dp"
+                        android:backgroundTint="@color/text_secondary" />
+                </LinearLayout>
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- ── Acciones de Memoria (Cuadrícula compacta de 2 filas) ───────── -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="4dp"
+            app:cardBackgroundColor="@color/bg_card"
+            app:cardCornerRadius="8dp"
+            app:strokeWidth="1dp"
+            app:strokeColor="#30363D">
+
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="12dp"
-                app:cardBackgroundColor="@color/bg_card"
-                app:cardCornerRadius="12dp"
-                app:strokeWidth="1dp"
-                app:strokeColor="#30363D">
+                android:orientation="vertical"
+                android:padding="4dp">
 
-                <GridLayout
+                <!-- Fila 1 de Acciones -->
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:padding="8dp"
-                    android:columnCount="2"
-                    android:alignmentMode="alignMargins">
+                    android:orientation="horizontal">
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnRead"
                         style="@style/Widget.Material3.Button.TonalButton"
                         android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_columnWeight="1"
-                        android:layout_margin="4dp"
+                        android:layout_height="34dp"
+                        android:minHeight="34dp"
+                        android:layout_weight="1"
+                        android:layout_margin="2dp"
+                        android:insetTop="0dp"
+                        android:insetBottom="0dp"
+                        android:paddingHorizontal="2dp"
+                        android:paddingVertical="0dp"
                         android:text="@string/read_eeprom"
-                        android:enabled="false"
-                        app:icon="@android:drawable/ic_menu_search" />
+                        android:textSize="11sp"
+                        android:enabled="false" />
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnWrite"
                         style="@style/Widget.Material3.Button.TonalButton"
                         android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_columnWeight="1"
-                        android:layout_margin="4dp"
+                        android:layout_height="34dp"
+                        android:minHeight="34dp"
+                        android:layout_weight="1"
+                        android:layout_margin="2dp"
+                        android:insetTop="0dp"
+                        android:insetBottom="0dp"
+                        android:paddingHorizontal="2dp"
+                        android:paddingVertical="0dp"
                         android:text="@string/write_eeprom"
-                        android:enabled="false"
-                        app:icon="@android:drawable/ic_menu_edit" />
+                        android:textSize="11sp"
+                        android:enabled="false" />
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnErase"
                         style="@style/Widget.Material3.Button.TonalButton"
                         android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_columnWeight="1"
-                        android:layout_margin="4dp"
+                        android:layout_height="34dp"
+                        android:minHeight="34dp"
+                        android:layout_weight="1"
+                        android:layout_margin="2dp"
+                        android:insetTop="0dp"
+                        android:insetBottom="0dp"
+                        android:paddingHorizontal="2dp"
+                        android:paddingVertical="0dp"
                         android:text="@string/erase_eeprom"
-                        android:enabled="false"
-                        app:icon="@android:drawable/ic_menu_delete" />
+                        android:textSize="11sp"
+                        android:enabled="false" />
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnVerify"
                         style="@style/Widget.Material3.Button.TonalButton"
                         android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_columnWeight="1"
-                        android:layout_margin="4dp"
+                        android:layout_height="34dp"
+                        android:minHeight="34dp"
+                        android:layout_weight="1"
+                        android:layout_margin="2dp"
+                        android:insetTop="0dp"
+                        android:insetBottom="0dp"
+                        android:paddingHorizontal="2dp"
+                        android:paddingVertical="0dp"
                         android:text="@string/verify_eeprom"
-                        android:enabled="false"
-                        app:icon="@android:drawable/ic_menu_info_details" />
+                        android:textSize="11sp"
+                        android:enabled="false" />
+                </LinearLayout>
+
+                <!-- Fila 2 de Acciones -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:layout_marginTop="2dp">
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnScan"
                         style="@style/Widget.Material3.Button.TonalButton"
                         android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_columnWeight="1"
-                        android:layout_margin="4dp"
-                        android:text="Escanear / ID"
-                        android:enabled="false"
-                        app:icon="@android:drawable/ic_menu_help" />
+                        android:layout_height="34dp"
+                        android:minHeight="34dp"
+                        android:layout_weight="1"
+                        android:layout_margin="2dp"
+                        android:insetTop="0dp"
+                        android:insetBottom="0dp"
+                        android:paddingHorizontal="2dp"
+                        android:paddingVertical="0dp"
+                        android:text="Escanear"
+                        android:textSize="11sp"
+                        android:enabled="false" />
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnFullDump"
                         style="@style/Widget.Material3.Button.TonalButton"
                         android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_columnWeight="1"
-                        android:layout_margin="4dp"
+                        android:layout_height="34dp"
+                        android:minHeight="34dp"
+                        android:layout_weight="1"
+                        android:layout_margin="2dp"
+                        android:insetTop="0dp"
+                        android:insetBottom="0dp"
+                        android:paddingHorizontal="2dp"
+                        android:paddingVertical="0dp"
                         android:text="Full Dump"
-                        android:enabled="false"
-                        app:icon="@android:drawable/ic_menu_revert" />
+                        android:textSize="11sp"
+                        android:enabled="false" />
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnSave"
                         style="@style/Widget.Material3.Button"
                         android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_columnSpan="2"
-                        android:layout_columnWeight="1"
-                        android:layout_margin="4dp"
+                        android:layout_height="34dp"
+                        android:minHeight="34dp"
+                        android:layout_weight="1.2"
+                        android:layout_margin="2dp"
+                        android:insetTop="0dp"
+                        android:insetBottom="0dp"
+                        android:paddingHorizontal="4dp"
+                        android:paddingVertical="0dp"
                         android:text="@string/save_eeprom"
+                        android:textSize="11sp"
                         android:enabled="false"
-                        app:backgroundTint="@color/btn_send"
-                        app:icon="@android:drawable/ic_menu_save" />
-                </GridLayout>
-            </com.google.android.material.card.MaterialCardView>
+                        app:backgroundTint="@color/btn_send" />
+                </LinearLayout>
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
 
-            <!-- ── Instrucciones de hardware ────────────────────────────── -->
-            <TextView
-                android:id="@+id/tvInstructions"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginHorizontal="8dp"
-                android:layout_marginBottom="8dp"
-                android:text="Conecte el dispositivo USB para comenzar"
-                android:textColor="@color/text_secondary"
-                android:textSize="12sp" />
-
-            <!--
-                BARRA DE PROGRESO ELIMINADA DE LA ACTIVIDAD PRINCIPAL.
-                Solo existe la barra dentro del PopupWindow (popup_hex_viewer.xml).
-                Esto evita la duplicidad visual y los errores de referencia.
-            -->
-
-        </LinearLayout>
-    </androidx.core.widget.NestedScrollView>
-
-    <!-- ── Log fijo en la parte inferior ───────────────────────────────── -->
-    <com.google.android.material.card.MaterialCardView
-        android:layout_width="match_parent"
-        android:layout_height="180dp"
-        app:cardBackgroundColor="@color/bg_card"
-        app:cardCornerRadius="0dp"
-        app:strokeWidth="1dp"
-        app:strokeColor="#30363D">
-
-        <LinearLayout
+        <!-- ── Instrucciones de hardware compactas ────────────────────────── -->
+        <TextView
+            android:id="@+id/tvInstructions"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:orientation="vertical"
-            android:padding="8dp">
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="4dp"
+            android:layout_marginBottom="4dp"
+            android:text="Conecte el dispositivo USB para comenzar"
+            android:textColor="@color/text_secondary"
+            android:textSize="10sp"
+            android:maxLines="1"
+            android:ellipsize="end" />
+
+        <!-- ── Anuncio Nativo Google AdMob (Políticas 2026 y tema integrado) ── -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/nativeAdCard"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="4dp"
+            android:visibility="gone"
+            app:cardBackgroundColor="@color/bg_card"
+            app:cardCornerRadius="8dp"
+            app:strokeWidth="1dp"
+            app:strokeColor="#30363D">
+
+            <com.google.android.gms.ads.nativead.NativeAdView
+                android:id="@+id/nativeAdView"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:padding="6dp">
+
+                    <!-- Icono de la app/anuncio -->
+                    <ImageView
+                        android:id="@+id/ad_app_icon"
+                        android:layout_width="36dp"
+                        android:layout_height="36dp"
+                        android:layout_marginEnd="6dp"
+                        android:contentDescription="Icono de anuncio"
+                        android:scaleType="fitCenter" />
+
+                    <!-- Textos e insignias -->
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <!-- Fila con Distintivo de Anuncio (Google Policy) y Titular -->
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:gravity="center_vertical">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Ad"
+                                android:textSize="9sp"
+                                android:textStyle="bold"
+                                android:textColor="#FFFFFF"
+                                android:background="@drawable/badge_ad"
+                                android:paddingHorizontal="4dp"
+                                android:paddingVertical="1dp"
+                                android:layout_marginEnd="4dp" />
+
+                            <TextView
+                                android:id="@+id/ad_headline"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:textColor="@color/text_primary"
+                                android:textSize="11sp"
+                                android:textStyle="bold"
+                                android:maxLines="1"
+                                android:ellipsize="end" />
+                        </LinearLayout>
+
+                        <!-- Anunciante o cuerpo -->
+                        <TextView
+                            android:id="@+id/ad_body"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:textColor="@color/text_secondary"
+                            android:textSize="10sp"
+                            android:maxLines="1"
+                            android:ellipsize="end"
+                            android:layout_marginTop="1dp" />
+
+                        <TextView
+                            android:id="@+id/ad_advertiser"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:textColor="@color/text_muted"
+                            android:textSize="9sp"
+                            android:maxLines="1"
+                            android:ellipsize="end"
+                            android:visibility="gone" />
+                    </LinearLayout>
+
+                    <!-- Botón CTA -->
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/ad_call_to_action"
+                        android:layout_width="wrap_content"
+                        android:layout_height="30dp"
+                        android:minHeight="30dp"
+                        android:layout_marginStart="6dp"
+                        android:paddingHorizontal="8dp"
+                        android:paddingVertical="0dp"
+                        android:insetTop="0dp"
+                        android:insetBottom="0dp"
+                        android:textSize="10sp"
+                        android:textColor="#FFFFFF"
+                        app:backgroundTint="@color/color_primary"
+                        app:cornerRadius="6dp" />
+                </LinearLayout>
+            </com.google.android.gms.ads.nativead.NativeAdView>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- ── Log de Operaciones (Ocupa todo el espacio vertical restante) ─ -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:layout_marginBottom="4dp"
+            app:cardBackgroundColor="@color/bg_card"
+            app:cardCornerRadius="8dp"
+            app:strokeWidth="1dp"
+            app:strokeColor="#30363D">
 
             <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:gravity="center_vertical"
-                android:layout_marginBottom="4dp">
-
-                <TextView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="Log de Operaciones"
-                    android:textColor="@color/text_secondary"
-                    android:textSize="12sp"
-                    android:textStyle="bold" />
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnClearLog"
-                    style="@style/Widget.Material3.Button.TextButton"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_margin="0dp"
-                    android:padding="0dp"
-                    android:text="@string/clear_log"
-                    android:textSize="11sp" />
-            </LinearLayout>
-
-            <ScrollView
-                android:id="@+id/scrollLog"
-                android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:background="#0D1117"
+                android:orientation="vertical"
                 android:padding="6dp">
 
-                <TextView
-                    android:id="@+id/tvLog"
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="> Aplicación lista.\n"
-                    android:textColor="#8B949E"
-                    android:textSize="11sp"
-                    android:typeface="monospace" />
-            </ScrollView>
-        </LinearLayout>
-    </com.google.android.material.card.MaterialCardView>
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="2dp">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Log de Operaciones"
+                        android:textColor="@color/text_secondary"
+                        android:textSize="11sp"
+                        android:textStyle="bold" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnClearLog"
+                        style="@style/Widget.Material3.Button.TextButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:minWidth="0dp"
+                        android:minHeight="0dp"
+                        android:layout_margin="0dp"
+                        android:paddingHorizontal="6dp"
+                        android:paddingVertical="2dp"
+                        android:text="@string/clear_log"
+                        android:textSize="10sp" />
+                </LinearLayout>
+
+                <ScrollView
+                    android:id="@+id/scrollLog"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:background="#0D1117"
+                    android:padding="6dp">
+
+                    <TextView
+                        android:id="@+id/tvLog"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="> Aplicación lista.\n"
+                        android:textColor="#8B949E"
+                        android:textSize="11sp"
+                        android:typeface="monospace" />
+                </ScrollView>
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+    </LinearLayout>
+
+    <!-- ── Banner Inferior Google AdMob ──────────────────────────────────── -->
+    <LinearLayout
+        android:id="@+id/bannerContainer"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:background="@color/bg_dark">
+
+        <com.google.android.gms.ads.AdView
+            android:id="@+id/adViewBanner"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:adSize="BANNER"
+            app:adUnitId="ca-app-pub-5141499161332805/7125155396" />
+    </LinearLayout>
 
 </LinearLayout>
