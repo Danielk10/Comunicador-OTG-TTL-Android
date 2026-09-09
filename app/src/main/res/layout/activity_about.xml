@@ -223,7 +223,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Google Mobile Ads SDK (AdMob)"
+                    android:text="Google Mobile Ads SDK · AdMob"
                     android:textColor="#E6EDF3"
                     android:textSize="13sp"
                     android:textStyle="bold" />

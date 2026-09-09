@@ -210,7 +210,7 @@
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="I2C EEPROM:   24C01 … 24C512  (128 B – 64 KB)\nSPI EEPROM:   25LC010A … 25LC1024  (128 B – 128 KB)\nFlash NOR SPI: W25Q08 … W25Q128  (1 MB – 16 MB)\nFlash NOR SPI: MX25L80 … MX25L128  (1 MB – 16 MB)"
+                    android:text="@string/firmware_supported_chips_content"
                     android:textColor="#CDD9E5"
                     android:textSize="12sp"
                     android:fontFamily="monospace"
