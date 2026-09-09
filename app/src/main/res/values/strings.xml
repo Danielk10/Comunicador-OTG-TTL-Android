@@ -84,7 +84,7 @@
 
     <!-- About strings -->
     <string name="about_title">Acerca de OTG Flash EEPROM</string>
-    <string name="about_version">Versión 1.0.1</string>
+    <string name="about_version">Versión 1.2.0</string>
     <string name="about_description">
         Programador universal de memorias EEPROM I2C y Flash SPI
         mediante un PIC16F628A como puente USB-Serial.

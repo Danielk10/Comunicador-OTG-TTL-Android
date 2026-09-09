@@ -54,10 +54,12 @@ public class AboutActivity extends AppCompatActivity {
         try {
             PackageInfo pi = getPackageManager()
                     .getPackageInfo(getPackageName(), 0);
+            long code = android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P ?
+                    pi.getLongVersionCode() : pi.versionCode;
             tvVersion.setText("Versión " + pi.versionName
-                    + "  (build " + pi.versionCode + ")");
+                    + "  (build " + code + ")");
         } catch (PackageManager.NameNotFoundException e) {
-            tvVersion.setText("Versión 1.0.1");
+            tvVersion.setText(getString(R.string.about_version));
         }
 
         // ── Licencia ──────────────────────────────────────────────────
