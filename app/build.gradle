@@ -14,13 +14,13 @@ android {
 
     // Redirigir la carpeta build a /tmp
     project.layout.buildDirectory.set(file("/tmp/calculo"))
-    namespace 'com.mobincube.keystore.jks_parley_copy.sc_55UCEB'
+    namespace 'com.mobincube.pronosticos_parley_copy.sc_55UCEB'
     compileSdk {
         version = release(37)
     }
 
     defaultConfig {
-        applicationId "com.mobincube.keystore.jks_parley_copy.sc_55UCEB"
+        applicationId "com.mobincube.pronosticos_parley_copy.sc_55UCEB"
         minSdk 23
         targetSdk 37
         versionCode 6

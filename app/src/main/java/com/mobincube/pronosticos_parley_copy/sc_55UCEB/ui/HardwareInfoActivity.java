@@ -1,11 +1,11 @@
-package com.mobincube.keystore.jks_parley_copy.sc_55UCEB.ui;
+package com.mobincube.pronosticos_parley_copy.sc_55UCEB.ui;
 
 import android.os.Bundle;
 import android.view.MenuItem;
 import android.widget.ScrollView;
 import androidx.appcompat.app.AppCompatActivity;
 
-import com.mobincube.keystore.jks_parley_copy.sc_55UCEB.R;
+import com.mobincube.pronosticos_parley_copy.sc_55UCEB.R;
 
 public class HardwareInfoActivity extends AppCompatActivity {
 

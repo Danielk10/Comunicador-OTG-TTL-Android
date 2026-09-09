@@ -27,7 +27,7 @@ Una vez generado y firmado el archivo `.aab` con `./gradlew bundleRelease`, ejec
 
 ```bash
 python upload_play_store.py \
-  --package_name com.mobincube.keystore.jks_parley_copy.sc_55UCEB \
+  --package_name com.mobincube.pronosticos_parley_copy.sc_55UCEB \
   --aab_path /tmp/calculo/outputs/bundle/release/app-release.aab \
   --service_account_json /ruta/a/tu/google-play-api.json \
   --track production \
@@ -45,7 +45,7 @@ python upload_play_store.py \
 
 | Parámetro | Descripción | Valor por defecto / Ejemplo |
 | :--- | :--- | :--- |
-| `--package_name` | ID de la aplicación en Google Play | `com.mobincube.keystore.jks_parley_copy.sc_55UCEB` |
+| `--package_name` | ID de la aplicación en Google Play | `com.mobincube.pronosticos_parley_copy.sc_55UCEB` |
 | `--aab_path` | Ruta absoluta al archivo `.aab` firmado | `/tmp/calculo/outputs/bundle/release/app-release.aab` |
 | `--service_account_json` | Ruta al archivo JSON de credenciales de Google Cloud | `/ruta/a/tu/google-play-api.json` |
 | `--track` | Pista de publicación en Google Play | `production`, `beta`, `alpha` o `internal` |

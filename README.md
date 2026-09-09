@@ -224,7 +224,7 @@ El proyecto sigue principios de Programación Orientada a Objetos (POO) con sepa
 ### Estructura de Paquetes
 
 ```
-com.mobincube.keystore.jks_parley_copy.sc_55UCEB/
+com.mobincube.pronosticos_parley_copy.sc_55UCEB/
 ├── usb/
 │   └── UsbSerialManager.java          # Gestión de comunicación USB OTG
 ├── eeprom/

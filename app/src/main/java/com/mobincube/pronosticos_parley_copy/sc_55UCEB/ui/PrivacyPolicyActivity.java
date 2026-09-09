@@ -1,4 +1,4 @@
-package com.mobincube.keystore.jks_parley_copy.sc_55UCEB.ui;
+package com.mobincube.pronosticos_parley_copy.sc_55UCEB.ui;
 
 import android.os.Bundle;
 import android.view.MenuItem;
@@ -11,7 +11,7 @@ import android.widget.RelativeLayout;
 
 import androidx.appcompat.app.AppCompatActivity;
 
-import com.mobincube.keystore.jks_parley_copy.sc_55UCEB.R;
+import com.mobincube.pronosticos_parley_copy.sc_55UCEB.R;
 
 /**
  * Muestra la política de privacidad de la aplicación en un WebView.

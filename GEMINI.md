@@ -143,7 +143,7 @@ pip install google-api-python-client google-auth-httplib2 google-auth-oauthlib
 ### Ejecutar Publicación:
 ```bash
 python upload_play_store.py \
-  --package_name com.mobincube.keystore.jks_parley_copy.sc_55UCEB \
+  --package_name com.mobincube.pronosticos_parley_copy.sc_55UCEB \
   --aab_path /tmp/calculo/outputs/bundle/release/app-release.aab \
   --service_account_json /ruta/a/tu/google-play-api.json \
   --track production \
