@@ -18,7 +18,9 @@
 
     <!-- USB OTG - imprescindible para la funcionalidad principal -->
     <uses-permission android:name="android.permission.USB_PERMISSION" />
-    <uses-permission android:name="android.hardware.usb.host" />
+    <uses-feature
+        android:name="android.hardware.usb.host"
+        android:required="false" />
 
     <!-- Almacenamiento: guardar dumps y firmware (API ≤ 32 para lectura, ≤ 28 para escritura) -->
     <uses-permission
@@ -37,6 +39,7 @@
     <!-- ── Aplicación ───────────────────────────────────────────────────── -->
     <application
         android:allowBackup="true"
+        android:largeHeap="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
         android:icon="@mipmap/ic_launcher"
@@ -44,7 +47,8 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.ComunicadorOTGTTLAndroid"
-        android:usesCleartextTraffic="false">
+        android:usesCleartextTraffic="false"
+        tools:targetApi="37">
 
         <!-- ── Google AdMob ──────────────────────────────────────────────── -->
         <meta-data
@@ -80,24 +84,28 @@
         <!-- ── Diagramas de hardware ─────────────────────────────────────── -->
         <activity
             android:name=".ui.HardwareInfoActivity"
+            android:exported="false"
             android:label="Hardware Info"
             android:parentActivityName=".MainActivity" />
 
         <!-- ── Acerca de ─────────────────────────────────────────────────── -->
         <activity
             android:name=".ui.AboutActivity"
+            android:exported="false"
             android:label="@string/menu_about"
             android:parentActivityName=".MainActivity" />
 
         <!-- ── Firmware ──────────────────────────────────────────────────── -->
         <activity
             android:name=".ui.FirmwareActivity"
+            android:exported="false"
             android:label="@string/firmware_title"
             android:parentActivityName=".MainActivity" />
 
         <!-- ── Política de privacidad (WebView) ─────────────────────────── -->
         <activity
             android:name=".ui.PrivacyPolicyActivity"
+            android:exported="false"
             android:label="@string/privacy_title"
             android:parentActivityName=".MainActivity" />
 
