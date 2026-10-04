@@ -1,5 +1,6 @@
 package com.mobincube.pronosticos_parley_copy.sc_55UCEB;
 
+import android.content.Context;
 import android.content.Intent;
 import android.graphics.Color;
 import android.net.Uri;
@@ -96,6 +97,29 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
     private LogHelper       logHelper;
     private HexViewerHelper hexHelper;
 
+    // ── Gestión de Energía (WakeLock) ─────────────────────────────────────────
+    private android.os.PowerManager.WakeLock wakeLock;
+
+    private synchronized void acquireWakeLock() {
+        if (wakeLock == null) {
+            android.os.PowerManager pm = (android.os.PowerManager) getSystemService(Context.POWER_SERVICE);
+            if (pm != null) {
+                wakeLock = pm.newWakeLock(android.os.PowerManager.PARTIAL_WAKE_LOCK, "ComunicadorOTG:OperationWakeLock");
+            }
+        }
+        if (wakeLock != null && !wakeLock.isHeld()) {
+            wakeLock.acquire();
+        }
+    }
+
+    private synchronized void releaseWakeLock() {
+        if (wakeLock != null && wakeLock.isHeld()) {
+            try {
+                wakeLock.release();
+            } catch (Exception ignored) {}
+        }
+    }
+
     // ── Buffers y contadores ────────────────────────────────────────────────
     private byte[]                writeDataBuffer;
     private byte[]                eepromBuffer;
@@ -165,6 +189,7 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
                 pendingFullDump = false;
                 updateUIState(serialManager.isConnected());
                 hexHelper.dismiss();
+                releaseWakeLock();
             }
         };
 
@@ -246,6 +271,7 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
 
     private void disconnectSerial() {
         log("Desconectando...");
+        releaseWakeLock();
         serialManager.disconnect();
     }
 
@@ -260,6 +286,7 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
             Toast.makeText(this, R.string.toast_connect_first, Toast.LENGTH_SHORT).show();
             return;
         }
+        acquireWakeLock();
         cacheProtocol();
         totalSize      = cachedProtocol.getTotalSize(cachedModelIndex);
         currentAddress = 0;
@@ -286,6 +313,7 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
         mainHandler.post(() -> {
             state = ProtocolState.IDLE;
             cancelTimeout();
+            releaseWakeLock();
             eepromBuffer = readStream.toByteArray();
             log("✓ Lectura completada: " + eepromBuffer.length + " bytes.");
             Toast.makeText(this, R.string.toast_read_complete, Toast.LENGTH_SHORT).show();
@@ -348,6 +376,7 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
             }
 
             totalSize = writeDataBuffer.length;
+            acquireWakeLock();
             state = ProtocolState.WRITING;
             currentAddress = 0;
             log("Escribiendo " + totalSize + " bytes...");
@@ -382,6 +411,7 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
         mainHandler.post(() -> {
             state = ProtocolState.IDLE;
             cancelTimeout();
+            releaseWakeLock();
             log("✓ Escritura completada: " + writeDataBuffer.length + " bytes.");
             Toast.makeText(this, R.string.toast_write_complete, Toast.LENGTH_SHORT).show();
             updateUIState(true);
@@ -396,6 +426,7 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
 
     private void startErase() {
         if (!serialManager.isConnected()) return;
+        acquireWakeLock();
         cacheProtocol();
         byte[] cmd = cachedProtocol.buildEraseCommand(cachedModelIndex);
 
@@ -422,6 +453,7 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
         mainHandler.post(() -> {
             state = ProtocolState.IDLE;
             cancelTimeout();
+            releaseWakeLock();
             log("✓ Borrado completado.");
             Toast.makeText(this, R.string.toast_erase_complete, Toast.LENGTH_SHORT).show();
             updateUIState(serialManager.isConnected());
@@ -463,6 +495,7 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
 
     private void startScan() {
         if (!serialManager.isConnected()) return;
+        acquireWakeLock();
         // Siempre escanear ambos buses: primero I2C, luego JEDEC SPI
         scanI2cAddresses = null;
         scanJedecId = null;
@@ -480,6 +513,7 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
 
     private void startFullDump() {
         if (!serialManager.isConnected()) return;
+        acquireWakeLock();
         cacheProtocol();
 
         if (cachedProtocol instanceof I2cProtocol) {
@@ -514,6 +548,7 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
             state = ProtocolState.IDLE;
             pendingFullDump = false;
             updateUIState(serialManager.isConnected());
+            releaseWakeLock();
             return;
         }
 
@@ -855,6 +890,7 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
                 if (j.length >= 3) {
                     state = ProtocolState.IDLE;
                     cancelTimeout();
+                    releaseWakeLock();
 
                     boolean jedecValid = (j[0] & 0xFF) != 0xFF && (j[0] & 0xFF) != 0x00
                             && (j[2] & 0xFF) >= 0x10 && (j[2] & 0xFF) <= 0x1C;
@@ -910,6 +946,7 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
                     if (val == 0x58 && readStream.size() == 0) {
                         state = ProtocolState.IDLE;
                         cancelTimeout();
+                        releaseWakeLock();
                         log("✗ Full Dump abortado: chip no detectado o JEDEC inválido.");
                         runOnUiThread(() -> {
                             updateUIState(true);
@@ -950,6 +987,7 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
         state = ProtocolState.IDLE;
         pendingFullDump = false;
         cancelTimeout();
+        releaseWakeLock();
         log("Error I/O serial: " + e.getMessage());
         runOnUiThread(() -> {
             Toast.makeText(this, R.string.toast_serial_error, Toast.LENGTH_SHORT).show();
@@ -963,6 +1001,7 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
         state = ProtocolState.IDLE;
         pendingFullDump = false;
         cancelTimeout();
+        releaseWakeLock();
         log("Dispositivo desconectado.");
         runOnUiThread(() -> {
             Toast.makeText(this, R.string.toast_disconnected, Toast.LENGTH_SHORT).show();
@@ -1287,6 +1326,7 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
             currentNativeAd.destroy();
         }
         super.onDestroy();
+        releaseWakeLock();
         serialManager.cleanup();
         mainHandler.removeCallbacksAndMessages(null);
         bgExecutor.shutdownNow();

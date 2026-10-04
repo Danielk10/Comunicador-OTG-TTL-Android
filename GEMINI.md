@@ -68,18 +68,18 @@ Para evitar saturar el almacenamiento local persistente:
 La firma de la aplicación está completamente configurada para generar paquetes Release firmados listos para distribución o publicación en Google Play Store.
 
 ### Credenciales de la Clave:
-- **Archivo Keystore:** `/ruta/a/tu/keystore.jks`
-- **Alias:** `tu_alias`
-- **Contraseña de Keystore / Store Password:** `********`
-- **Contraseña de Alias / Key Password:** `********`
+- **Archivo Keystore:** `/home/danielpdiamon/firma_otg_flash_eeprom.jks`
+- **Alias:** `otg_flash_eeprom` (también compatible con alias `eeprom`)
+- **Contraseña de Keystore / Store Password:** `20270806Wxx`
+- **Contraseña de Alias / Key Password:** `20270806Wxx`
 
 ### Configuración en `keystore.properties`:
 En la raíz del proyecto se crea el archivo `keystore.properties`:
 ```properties
-storeFile=/ruta/a/tu/keystore.jks
-storePassword=********
-keyAlias=tu_alias
-keyPassword=********
+storeFile=/home/danielpdiamon/firma_otg_flash_eeprom.jks
+storePassword=20270806Wxx
+keyAlias=otg_flash_eeprom
+keyPassword=20270806Wxx
 ```
 
 ### Soporte en CI/CD y Variables de Entorno:
