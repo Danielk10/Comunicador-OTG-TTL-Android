@@ -13,7 +13,7 @@ if (keystorePropertiesFile.exists()) {
 android {
 
     // Redirigir la carpeta build a /tmp
-    project.layout.buildDirectory.set(file("/tmp/calculo"))
+    project.layout.buildDirectory.set(file("/tmp/otg-flash-eeprom"))
     namespace 'com.mobincube.pronosticos_parley_copy.sc_55UCEB'
     compileSdk {
         version = release(37)

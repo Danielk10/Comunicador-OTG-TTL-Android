@@ -28,7 +28,7 @@ Una vez generado y firmado el archivo `.aab` con `./gradlew bundleRelease`, ejec
 ```bash
 python upload_play_store.py \
   --package_name com.mobincube.pronosticos_parley_copy.sc_55UCEB \
-  --aab_path /tmp/calculo/outputs/bundle/release/app-release.aab \
+  --aab_path /tmp/otg-flash-eeprom/outputs/bundle/release/app-release.aab \
   --service_account_json /ruta/a/tu/google-play-api.json \
   --track production \
   --release_notes "- Actualización a Android SDK 37 (Android 17) con compatibilidad mejorada.
@@ -46,7 +46,7 @@ python upload_play_store.py \
 | Parámetro | Descripción | Valor por defecto / Ejemplo |
 | :--- | :--- | :--- |
 | `--package_name` | ID de la aplicación en Google Play | `com.mobincube.pronosticos_parley_copy.sc_55UCEB` |
-| `--aab_path` | Ruta absoluta al archivo `.aab` firmado | `/tmp/calculo/outputs/bundle/release/app-release.aab` |
+| `--aab_path` | Ruta absoluta al archivo `.aab` firmado | `/tmp/otg-flash-eeprom/outputs/bundle/release/app-release.aab` |
 | `--service_account_json` | Ruta al archivo JSON de credenciales de Google Cloud | `/ruta/a/tu/google-play-api.json` |
 | `--track` | Pista de publicación en Google Play | `production`, `beta`, `alpha` o `internal` |
 | `--release_notes` | Notas de versión estructuradas para español (`es-419` y `es-ES`) | `"- Cambio 1.\n- Cambio 2."` |
@@ -60,7 +60,7 @@ Para generar el archivo `.aab` de producción:
 ```bash
 ./gradlew bundleRelease
 ```
-El archivo de salida se generará en `/tmp/calculo/outputs/bundle/release/app-release.aab` firmado con las credenciales de `keystore.properties` (`/ruta/a/tu/keystore.jks`).
+El archivo de salida se generará en `/tmp/otg-flash-eeprom/outputs/bundle/release/app-release.aab` firmado con las credenciales de `keystore.properties` (`/ruta/a/tu/keystore.jks`).
 
 ---
 

@@ -394,7 +394,7 @@ El proyecto utiliza las siguientes especificaciones técnicas modernas:
 - **Android Gradle Plugin (AGP):** 9.2.1
 - **Gradle:** 9.6.0 (Gradle Wrapper)
 - **Firma Release:** Configurada vía `keystore.properties` (con fallback a variables de entorno para CI/CD).
-- **Ruta de compilación (Build Output):** Redirigida a `/tmp/calculo` para mantener limpio el repositorio.
+- **Ruta de compilación (Build Output):** Redirigida a `/tmp/otg-flash-eeprom` para mantener limpio el repositorio.
 
 ### Preparación del SDK:
 ```bash
@@ -402,9 +402,9 @@ bash setup-sdk.sh
 ```
 
 ### Compilación:
-- **APK Debug:** `./gradlew assembleDebug` (Salida: `/tmp/calculo/outputs/apk/debug/app-debug.apk`)
-- **APK Release firmado:** `./gradlew assembleRelease` (Salida: `/tmp/calculo/outputs/apk/release/app-release.apk`)
-- **AAB Release firmado (Play Store):** `./gradlew bundleRelease` (Salida: `/tmp/calculo/outputs/bundle/release/app-release.aab`)
+- **APK Debug:** `./gradlew assembleDebug` (Salida: `/tmp/otg-flash-eeprom/outputs/apk/debug/app-debug.apk`)
+- **APK Release firmado:** `./gradlew assembleRelease` (Salida: `/tmp/otg-flash-eeprom/outputs/apk/release/app-release.apk`)
+- **AAB Release firmado (Play Store):** `./gradlew bundleRelease` (Salida: `/tmp/otg-flash-eeprom/outputs/bundle/release/app-release.aab`)
 
 Consulta [GEMINI.md](GEMINI.md) para más detalles técnicos de compilación y firma.
 

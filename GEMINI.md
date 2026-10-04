@@ -47,13 +47,13 @@ Para evitar saturar el almacenamiento local persistente:
 
 - **Carpeta de Compilación (Build Directory):** Configurada en `app/build.gradle` para redirigir toda la compilación a:
   ```
-  /tmp/calculo
+  /tmp/otg-flash-eeprom
   ```
 - **Ruta de salida de APKs generados:**
-  - Debug: `/tmp/calculo/outputs/apk/debug/app-debug.apk`
-  - Release (firmado): `/tmp/calculo/outputs/apk/release/app-release.apk`
+  - Debug: `/tmp/otg-flash-eeprom/outputs/apk/debug/app-debug.apk`
+  - Release (firmado): `/tmp/otg-flash-eeprom/outputs/apk/release/app-release.apk`
 - **Ruta de salida de AAB (Android App Bundle para Google Play Store):**
-  - Release (firmado): `/tmp/calculo/outputs/bundle/release/app-release.aab`
+  - Release (firmado): `/tmp/otg-flash-eeprom/outputs/bundle/release/app-release.aab`
 - **Caché de Gradle y Configuration Cache:**
   - `org.gradle.configuration-cache=true` habilitado en `gradle.properties`.
   - Se puede redirigir el directorio global de caché de Gradle mediante la variable de entorno:
@@ -110,19 +110,19 @@ Una vez instalado el SDK, compila el proyecto con Gradle:
 ```bash
 ./gradlew assembleDebug
 ```
-*Salida:* `/tmp/calculo/outputs/apk/debug/app-debug.apk`
+*Salida:* `/tmp/otg-flash-eeprom/outputs/apk/debug/app-debug.apk`
 
 ### Compilar APK Release (Firmado):
 ```bash
 ./gradlew assembleRelease
 ```
-*Salida:* `/tmp/calculo/outputs/apk/release/app-release.apk`
+*Salida:* `/tmp/otg-flash-eeprom/outputs/apk/release/app-release.apk`
 
 ### Compilar Android App Bundle (AAB para Google Play Store, Firmado):
 ```bash
 ./gradlew bundleRelease
 ```
-*Salida:* `/tmp/calculo/outputs/bundle/release/app-release.aab`
+*Salida:* `/tmp/otg-flash-eeprom/outputs/bundle/release/app-release.aab`
 
 ### Limpiar compilación:
 ```bash
@@ -144,7 +144,7 @@ pip install google-api-python-client google-auth-httplib2 google-auth-oauthlib
 ```bash
 python upload_play_store.py \
   --package_name com.mobincube.pronosticos_parley_copy.sc_55UCEB \
-  --aab_path /tmp/calculo/outputs/bundle/release/app-release.aab \
+  --aab_path /tmp/otg-flash-eeprom/outputs/bundle/release/app-release.aab \
   --service_account_json /ruta/a/tu/google-play-api.json \
   --track production \
   --release_notes "- Actualización a Android SDK 37 (Android 17) con compatibilidad mejorada.
