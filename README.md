@@ -7,6 +7,7 @@
 [![Hardware](https://img.shields.io/badge/Hardware-PIC16F628A-orange.svg)](https://www.microchip.com/)
 [![Protocol](https://img.shields.io/badge/Protocol-I2C%20%7C%20SPI-blue.svg)](./PICMEM_v3_Protocolo.md)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](./LICENSE)
+[![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-ffdd00?style=flat-square&logo=buy-me-a-coffee&logoColor=black)](https://buymeacoffee.com/danielpdiai)
 
 **OTG Flash EEPROM** es una aplicación Android profesional que convierte tu smartphone en un programador y lector universal de memorias EEPROM. Utilizando un microcontrolador PIC16F628A como puente de comunicación, la aplicación permite grabar y leer memorias I2C (24Cxx) y SPI Flash (25Cxx, W25Qxx) directamente desde tu dispositivo móvil.
 
@@ -444,6 +445,14 @@ Consulta [GEMINI.md](GEMINI.md) para más detalles técnicos de compilación y f
 - ✅ Compatible con adaptadores USB-Serial comunes
 - 🔄 En desarrollo: Soporte Microwire (93Cxx)
 - 🔄 En desarrollo: Editor hexadecimal
+
+---
+
+## ☕ Apoyo y Donaciones
+
+Si este proyecto te ha sido de utilidad y deseas apoyar el desarrollo continuo:
+
+[![Buy Me A Coffee](https://img.buymeacoffee.com/button-api/?text=Cómprame%20un%20café&emoji=☕&slug=danielpdiai&button_colour=FFDD00&font_colour=000000&font_family=Cookie&outline_colour=000000&coffee_colour=ffffff)](https://buymeacoffee.com/danielpdiai)
 
 ---
 
