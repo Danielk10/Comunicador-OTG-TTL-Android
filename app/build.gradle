@@ -72,6 +72,8 @@ dependencies {
     implementation libs.constraintlayout
     implementation(libs.usb.serial.for1.android)
     implementation libs.play.services.ads
+    // UMP: consentimiento de privacidad (RGPD / normativas estatales de EE. UU.)
+    implementation 'com.google.android.ump:user-messaging-platform:4.0.0'
     testImplementation libs.junit
     androidTestImplementation libs.ext.junit
     androidTestImplementation libs.espresso.core

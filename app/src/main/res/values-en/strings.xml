@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">OTG Flash EEPROM</string>
+    <string name="menu_privacy_options">Privacy options</string>
+    <string name="privacy_options_error">Could not open privacy options. Please try again.</string>
 
     <string-array name="eeprom_protocols">
         <item>I2C — 24Cxx</item>

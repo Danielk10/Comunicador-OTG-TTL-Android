@@ -1021,6 +1021,15 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
     }
 
     @Override
+    public boolean onPrepareOptionsMenu(Menu menu) {
+        MenuItem privacyItem = menu.findItem(R.id.action_privacy_options);
+        if (privacyItem != null) {
+            privacyItem.setVisible(ConsentManager.isPrivacyOptionsRequired());
+        }
+        return super.onPrepareOptionsMenu(menu);
+    }
+
+    @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
         int id = item.getItemId();
 
@@ -1038,6 +1047,23 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
         // ── Política de privacidad ────────────────────────────────────────
         if (id == R.id.action_privacy) {
             startActivity(new Intent(this, PrivacyPolicyActivity.class));
+            return true;
+        }
+
+        // ── Opciones de privacidad (UMP) ──────────────────────────────────
+        if (id == R.id.action_privacy_options) {
+            ConsentManager.showPrivacyOptionsForm(
+                    this,
+                    error -> {
+                        if (error != null) {
+                            Toast.makeText(
+                                            this,
+                                            getString(R.string.privacy_options_error),
+                                            Toast.LENGTH_SHORT)
+                                    .show();
+                        }
+                        onConsentChanged();
+                    });
             return true;
         }
 
@@ -1142,13 +1168,55 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
     // =========================================================================
 
     private void initAds() {
-        MobileAds.initialize(this, initializationStatus -> {
-            Log.d(TAG, "AdMob SDK inicializado correctamente.");
-            runOnUiThread(() -> {
-                loadBannerAd();
-                loadNativeAd();
-            });
+        ConsentManager.requestConsent(this, canRequestAds -> {
+            if (isFinishing() || isDestroyed()) {
+                return;
+            }
+            invalidateOptionsMenu();
+            applyConsentState(canRequestAds);
         });
+    }
+
+    /** Inicializa o retira los anuncios según la decisión de privacidad. */
+    private void applyConsentState(boolean canRequestAds) {
+        if (canRequestAds) {
+            MobileAds.initialize(this, initializationStatus -> {
+                Log.d(TAG, "AdMob SDK inicializado correctamente.");
+                runOnUiThread(() -> {
+                    loadBannerAd();
+                    loadNativeAd();
+                });
+            });
+        } else {
+            destroyAds();
+        }
+    }
+
+    /** Reaplica el estado tras cambiar las opciones de privacidad. */
+    public void onConsentChanged() {
+        if (isFinishing() || isDestroyed()) {
+            return;
+        }
+        invalidateOptionsMenu();
+        applyConsentState(ConsentManager.canRequestAds());
+    }
+
+    private void destroyAds() {
+        if (adViewBanner != null) {
+            adViewBanner.destroy();
+            adViewBanner = null;
+        }
+        if (bannerContainer != null) {
+            bannerContainer.removeAllViews();
+            bannerContainer.setVisibility(View.GONE);
+        }
+        if (currentNativeAd != null) {
+            currentNativeAd.destroy();
+            currentNativeAd = null;
+        }
+        if (nativeAdCard != null) {
+            nativeAdCard.setVisibility(View.GONE);
+        }
     }
 
     private void loadBannerAd() {
