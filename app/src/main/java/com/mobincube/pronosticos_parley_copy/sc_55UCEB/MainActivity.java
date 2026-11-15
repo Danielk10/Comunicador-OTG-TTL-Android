@@ -4,9 +4,11 @@ import android.content.Context;
 import android.content.Intent;
 import android.graphics.Color;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -18,7 +20,6 @@ import android.widget.ImageView;
 import android.widget.ScrollView;
 import android.widget.Spinner;
 import android.widget.TextView;
-import android.view.Gravity;
 import android.widget.FrameLayout;
 import android.widget.Toast;
 
@@ -1229,7 +1230,7 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
 
             adViewBanner = new AdView(this);
             adViewBanner.setAdUnitId("ca-app-pub-5141499161332805/7125155396");
-            adViewBanner.setAdSize(AdSize.BANNER);
+            adViewBanner.setAdSize(getAdaptiveBannerAdSize());
 
             adViewBanner.setAdListener(new AdListener() {
                 @Override
@@ -1251,16 +1252,37 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
             });
 
             FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(
-                    FrameLayout.LayoutParams.WRAP_CONTENT,
+                    FrameLayout.LayoutParams.MATCH_PARENT,
                     FrameLayout.LayoutParams.WRAP_CONTENT
             );
-            lp.gravity = Gravity.CENTER;
             bannerContainer.addView(adViewBanner, lp);
 
             AdRequest bannerRequest = new AdRequest.Builder().build();
             adViewBanner.loadAd(bannerRequest);
         } catch (Exception e) {
             Log.e(TAG, "Error inicializando Banner AdMob: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Tamaño adaptativo anclado al ancho real de la pantalla.
+     *
+     * <p>Antes se usaba {@link AdSize#BANNER} (320x50 fijo) y el contenedor
+     * quedaba centrado con franjas laterales. Con el tamaño adaptativo el
+     * bloque ocupa todo el ancho disponible, como en PIC k150.</p>
+     */
+    private AdSize getAdaptiveBannerAdSize() {
+        try {
+            DisplayMetrics dm = getResources().getDisplayMetrics();
+            int widthPixels = dm.widthPixels;
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                widthPixels = getWindowManager().getCurrentWindowMetrics().getBounds().width();
+            }
+            int widthDp = (int) (widthPixels / dm.density);
+            return AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize(this, widthDp);
+        } catch (RuntimeException e) {
+            Log.w(TAG, "Banner adaptativo no disponible: " + e.getMessage());
+            return AdSize.BANNER;
         }
     }
 
