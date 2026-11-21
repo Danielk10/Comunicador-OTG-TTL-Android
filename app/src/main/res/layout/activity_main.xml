@@ -2,23 +2,23 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/bg_dark"
     android:orientation="vertical">
 
-    <!-- ── Toolbar ───────────────────────────────────────────────────────── -->
+    <!-- ── Toolbar (64dp, color uniforme, título a la izquierda) ─────────── -->
     <com.google.android.material.appbar.MaterialToolbar
         android:id="@+id/toolbar"
         android:layout_width="match_parent"
-        android:layout_height="46dp"
-        android:minHeight="46dp"
+        android:layout_height="64dp"
+        android:minHeight="64dp"
         android:background="@color/bg_header"
         android:elevation="3dp"
         app:title="@string/app_name"
         app:titleTextColor="@color/text_primary"
-        app:titleTextAppearance="@style/TextAppearance.Material3.TitleSmall"
-        app:titleCentered="true" />
+        app:titleTextAppearance="@style/TextAppearance.ComunicadorOTG.ToolbarTitle" />
 
     <!-- ── Contenedor principal sin scroll ──────────────────────────────── -->
     <LinearLayout

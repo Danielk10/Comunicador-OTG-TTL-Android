@@ -8,9 +8,20 @@
         <item name="colorOnSurface">@color/text_primary</item>
         <item name="android:colorBackground">@color/bg_dark</item>
         <item name="android:windowBackground">@color/bg_dark</item>
-        <item name="android:statusBarColor">@color/bg_dark</item>
+        <!-- Barra superior uniforme: el área de estado usa el mismo color que el toolbar -->
+        <item name="android:statusBarColor">@color/bg_header</item>
         <item name="android:navigationBarColor">@color/bg_dark</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowLightNavigationBar">false</item>
     </style>
 
     <style name="Theme.ComunicadorOTGTTLAndroid" parent="Base.Theme.ComunicadorOTGTTLAndroid" />
+
+    <!-- Título de la barra superior: 22sp como PIC k150 -->
+    <style name="TextAppearance.ComunicadorOTG.ToolbarTitle" parent="TextAppearance.Material3.TitleLarge">
+        <item name="android:textSize">22sp</item>
+        <item name="android:textColor">@color/text_primary</item>
+        <item name="android:textStyle">normal</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+    </style>
 </resources>

@@ -10,9 +10,11 @@ import android.os.Handler;
 import android.os.Looper;
 import android.util.DisplayMetrics;
 import android.util.Log;
+import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.WindowManager;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
@@ -25,6 +27,9 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.view.WindowCompat;
+import androidx.core.view.WindowInsetsCompat;
+import androidx.core.view.WindowInsetsControllerCompat;
 
 import com.google.android.gms.ads.AdListener;
 import com.google.android.gms.ads.AdLoader;
@@ -149,10 +154,27 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        // Pantalla completa inmersiva, igual que PIC k150 / Flash SPI Tool / EEPROM Flasher.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            getWindow().getAttributes().layoutInDisplayCutoutMode =
+                    WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES;
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            getWindow().setStatusBarColor(
+                    androidx.core.content.ContextCompat.getColor(this, R.color.bg_header));
+        }
+        WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
         setContentView(R.layout.activity_main);
 
         androidx.appcompat.widget.Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
+
+        View vistaPrincipal = findViewById(R.id.main);
+        if (vistaPrincipal != null) {
+            aplicarWindowInsets(vistaPrincipal);
+        }
+        ocultarBarrasSistema();
 
         filePickerLauncher = registerForActivityResult(
                 new androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult(),
@@ -1388,9 +1410,68 @@ public class MainActivity extends AppCompatActivity implements UsbSerialListener
         adView.setNativeAd(nativeAd);
     }
 
+    /**
+     * Aplica los insets de ventana manteniendo la barra superior pegada al borde
+     * físico de la pantalla (igual que PIC k150).
+     *
+     * El borde superior NO se rellena: el modo inmersivo oculta la barra de
+     * estado y el toolbar debe cubrir todo el ancho con un único color. Solo se
+     * respetan los laterales (recorte de cámara en horizontal) y el inferior.
+     */
+    private void aplicarWindowInsets(View vistaPrincipal) {
+        androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(vistaPrincipal, (v, windowInsets) -> {
+            androidx.core.graphics.Insets barras;
+            androidx.core.graphics.Insets recorte;
+            try {
+                barras = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars());
+                recorte = windowInsets.getInsets(WindowInsetsCompat.Type.displayCutout());
+            } catch (Throwable t) {
+                barras = androidx.core.graphics.Insets.NONE;
+                recorte = androidx.core.graphics.Insets.NONE;
+            }
+            v.setPadding(
+                    Math.max(barras.left, recorte.left),
+                    0,
+                    Math.max(barras.right, recorte.right),
+                    barras.bottom);
+            return windowInsets;
+        });
+    }
+
+    /** Oculta las barras del sistema en modo inmersivo, igual que PIC k150. */
+    private void ocultarBarrasSistema() {
+        WindowInsetsControllerCompat controller =
+                WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView());
+        if (controller != null) {
+            try {
+                controller.hide(WindowInsetsCompat.Type.systemBars());
+                controller.setSystemBarsBehavior(
+                        WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE);
+                controller.setAppearanceLightStatusBars(false);
+                controller.setAppearanceLightNavigationBars(false);
+            } catch (Throwable ignored) {
+            }
+        }
+    }
+
+    @Override
+    public void onWindowFocusChanged(boolean hasFocus) {
+        super.onWindowFocusChanged(hasFocus);
+        if (hasFocus) {
+            ocultarBarrasSistema();
+        }
+    }
+
+    @Override
+    public boolean onKeyUp(int keyCode, KeyEvent event) {
+        ocultarBarrasSistema();
+        return super.onKeyUp(keyCode, event);
+    }
+
     @Override
     protected void onResume() {
         super.onResume();
+        ocultarBarrasSistema();
         if (adViewBanner != null) {
             adViewBanner.resume();
         }
